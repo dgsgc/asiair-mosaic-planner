@@ -288,7 +288,9 @@ export function asiairPlanText(targets) {
 
 /**
  * A file for the ASIAIR Plan Sender helper: one ASIAIR plan per entry.
- * Each plan: {name, target: {name, centre, pa, cols, rows, overlap, fov}, exposures}.
+ * Each plan: {name, target: {name, centre, pa, cols, rows, overlap, fov}, exposures, angle?}.
+ * `angle` (optional) is the camera angle as the ASIAIR shows it; it is written
+ * to the plan as `angle` (added 19 Nov 2026; readers that don't know it ignore it).
  * The import text is included ready-made, so the helper needn't format it.
  */
 export function senderFile(plans, { rig = null, created = new Date().toISOString() } = {}) {
@@ -297,10 +299,11 @@ export function senderFile(plans, { rig = null, created = new Date().toISOString
     version: 1,
     created,
     rig,
-    plans: plans.map(({ name, target, exposures }) => {
+    plans: plans.map(({ name, target, exposures, angle }) => {
       const panels = mosaicPanels(target);
       return {
         name: String(name).replace(/[\r\n]+/g, ' ').trim() || 'Plan',
+        ...(Number.isFinite(angle) ? { angle: Math.round(angle * 10) / 10 } : {}),
         importText: asiairPlanText([target]),
         targets: panels.map((p) => ({ name: panelName(target.name, p, panels.length), ra: p.ra, dec: p.dec })),
         exposures: (exposures || [])

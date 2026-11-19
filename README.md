@@ -16,13 +16,18 @@ It's a single web page with no server of its own. Your rigs and targets stay in 
 
 ## Using it
 
-Open `index.html` through any web server (browsers don't load modules from `file://`):
+**On a Mac:** double-click **Open Planner.command**. It serves the planner on this Mac at <http://localhost:8077> and opens it in your browser. The first time, macOS may ask whether to open it: right-click it, choose **Open**, then **Open** again.
+- **Same address every time:** your rigs and targets are kept by your browser for that address, so always open the planner the same way.
+- **Running in the background:** the planner keeps running after the Terminal window closes, and double-clicking again reuses it.
+- **Python:** it needs Python 3. If it's missing, macOS offers to install Apple's command line tools, which include it.
+
+**Anywhere else:** serve the folder with any web server (browsers don't load the planner's modules from `file://`), for example:
 
 ```bash
-python3 -m http.server 8765
+python3 -m http.server 8077 --bind 127.0.0.1
 ```
 
-then go to <http://localhost:8765>. It can also be hosted as-is on GitHub Pages.
+then go to <http://localhost:8077>. It can also be hosted as-is on GitHub Pages; that copy can do everything except **Send to rig**.
 
 ## Sending plans to the ASIAIR
 
@@ -35,7 +40,12 @@ The planner can't write to an ASIAIR itself (the ASIAIR only takes plans from ZW
 
 A rig can instead be set to **Controller: Star Adventurer controller** (in the rig's settings), with the controller's address (default `http://rig.local`). Its targets then get **Send to rig: this target** and **Send to rig: all for <rig>**, which POST the same send file the Plan Sender uses to `<address>/plan`. The controller stores the panels and the first Light exposure line; nothing moves or shoots until you start it there. The controller's reply lists what it took and any notes (other exposure lines ignored, a plan made for a different field of view).
 
-Browsers only let a page send to a device on your network when the page itself is local, so open the planner from your computer (`http://localhost`, see Development). From an https copy, use **Save send file** and load the file on the controller's page instead.
+For these rigs:
+- **Overlap:** new targets start with 20% overlap.
+- **Exposure lines:** the exposures section says which line the controller will shoot, and warns when other lines will be ignored. Totals count only that line.
+- **Camera angle:** the send file carries the camera angle (as the ASIAIR shows it), both the rig's (`rig.angle`) and each plan's own (`plans[].angle`). The controller can then warn when the camera is turned differently.
+
+Browsers only let a page send to a device on your network when the page itself is local, so open the planner from your computer (`http://localhost`, see [Using it](#using-it)). From an https copy, use **Save send file** and load the file on the controller's page instead.
 
 ## What the ASIAIR app does with the pasted text
 

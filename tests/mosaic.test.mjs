@@ -132,8 +132,11 @@ test('send file for the ASIAIR Plan Sender', () => {
     { name: 'NGC 7000', target: { name: 'NGC 7000', centre: { ra: 314.7, dec: 44.3 }, pa: 31.2, cols: 2, rows: 1, overlap: 0.15, fov },
       exposures: [{ type: 'Light', exp: 300, gain: '', repeat: 10, bin: 2 }, { type: 'Light', exp: 0, repeat: 5, bin: 1 }] },
     { name: 'M33', target: { name: 'M33', centre: { ra: 23.46, dec: 30.66 }, pa: 0, cols: 1, rows: 1, overlap: 0.15, fov },
-      exposures: [{ type: 'Dark', exp: 120, gain: 100, repeat: 20, bin: 1 }] },
-  ], { created: '2026-11-18T12:00:00Z' });
+      exposures: [{ type: 'Dark', exp: 120, gain: 100, repeat: 20, bin: 1 }], angle: 148.84 },
+  ], { created: '2026-11-18T12:00:00Z', rig: { name: 'Test', angle: 90 } });
+  assert.equal(f.plans[0].angle, undefined, 'no angle given, none written');
+  assert.equal(f.plans[1].angle, 148.8, 'camera angle, ASIAIR convention, 0.1° steps');
+  assert.equal(f.rig.angle, 90);
   assert.equal(f.format, 'asiair-plan-sender');
   assert.equal(f.plans.length, 2);
   assert.equal(f.plans[0].targets.length, 2);

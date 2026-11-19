@@ -31,13 +31,15 @@ function defaultState() {
   const rig = {
     id: uid(), name: 'Example rig', color: PALETTE[0],
     focalLength: 500, pixelSize: 3.76, sensorWidthPx: 6248, sensorHeightPx: 4176,
-    fovWidth: null, fovHeight: null, angle: 0,
+    fovWidth: null, fovHeight: null, angle: 0, controller: 'asiair',
   };
   return { version: 2, rigs: [rig], targets: [], selectedId: null, survey: 'P/DSS2/color' };
 }
 
 // The ASIAIR app recommends at least 15% overlap for imported mosaics.
 const DEFAULT_OVERLAP = 0.15;
+// Star Adventurer controller mosaics are shot with 20% overlap.
+const SA_OVERLAP = 0.2;
 const SEQ_TYPES = ['Light', 'Dark', 'Flat', 'Bias'];
 const newSeq = () => ({ type: 'Light', exp: 300, gain: '', repeat: 10, bin: 1 });
 
@@ -343,6 +345,8 @@ function setupRigForm() {
     const v = rigFormValues(form);
     if (editingRigId) Object.assign(rigById(editingRigId), v);
     else state.rigs.push({ id: uid(), ...v });
+    // New targets go to the rig set up last, unless a target is selected.
+    state.lastRigId = editingRigId || state.rigs[state.rigs.length - 1].id;
     closeRigForm();
     changed();
   });
@@ -362,11 +366,11 @@ function setupRigForm() {
 
 // ---- targets -------------------------------------------------------------
 function addTarget(name, ra, dec) {
-  const rig = rigById(selected()?.rigId) || state.rigs[0];
+  const rig = rigById(selected()?.rigId) || rigById(state.lastRigId) || state.rigs[0];
   if (!rig) { $('#search-status').textContent = 'Add a rig first.'; return; }
   // A new target copies the exposures of the one selected before, if any.
   const seqs = selected()?.seqs?.map((s) => ({ ...s })) ?? [newSeq()];
-  const t = { id: uid(), name, rigId: rig.id, ra, dec, pa: rigAngle(rig), useRigAngle: true, cols: 1, rows: 1, overlap: DEFAULT_OVERLAP, seqs };
+  const t = { id: uid(), name, rigId: rig.id, ra, dec, pa: rigAngle(rig), useRigAngle: true, cols: 1, rows: 1, overlap: isSa(rig) ? SA_OVERLAP : DEFAULT_OVERLAP, seqs };
   state.targets.push(t);
   state.selectedId = t.id;
   changed();
@@ -385,7 +389,7 @@ function renderTargets() {
     },
     el('span', { class: 'dot', style: `background:${rig?.color ?? '#888'}` }),
     el('span', { class: 'name' }, t.name),
-    el('span', { class: 'meta' }, `${t.cols * t.rows > 1 ? `${t.cols}×${t.rows}` : 'single'} · ${formatDuration(sequenceSeconds(t.seqs) * t.cols * t.rows)} · ${rig?.name ?? 'no rig'}`)));
+    el('span', { class: 'meta' }, `${t.cols * t.rows > 1 ? `${t.cols}×${t.rows}` : 'single'} · ${formatDuration(sequenceSeconds(isSa(rig) ? firstLight(t.seqs) : t.seqs) * t.cols * t.rows)} · ${rig?.name ?? 'no rig'}`)));
   }
 }
 
@@ -484,10 +488,26 @@ function renderSeqs(t) {
   updateSeqSummary(t);
 }
 
+// A Star Adventurer controller shoots only the first Light line.
+const firstLight = (seqs) => seqs.filter((s) => s.type === 'Light' && Number(s.exp) > 0 && Number(s.repeat) > 0).slice(0, 1);
+
 function updateSeqSummary(t) {
   const n = t.cols * t.rows;
-  const per = sequenceSeconds(t.seqs);
-  const frames = t.seqs.reduce((a, s) => a + (Number(s.repeat) || 0), 0);
+  const sa = isSa(rigById(t.rigId));
+  const used = sa ? firstLight(t.seqs) : t.seqs;
+  const per = sequenceSeconds(used);
+  const frames = used.reduce((a, s) => a + (Number(s.repeat) || 0), 0);
+  const note = $('#seq-note');
+  note.hidden = !sa;
+  if (sa) {
+    const extra = t.seqs.length - used.length;
+    note.classList.toggle('warn', extra > 0 || !used.length);
+    note.textContent = !used.length
+      ? 'The Star Adventurer controller needs a Light line: it shoots only the first one.'
+      : extra > 0
+        ? `The Star Adventurer controller shoots only the first Light line; the other ${extra === 1 ? 'line is' : `${extra} lines are`} ignored. Gain and binning don’t apply.`
+        : 'The Star Adventurer controller shoots this Light line on every panel. Gain and binning don’t apply.';
+  }
   $('#seq-summary').textContent = per
     ? (n > 1
       ? `${formatDuration(per)} per panel, ${formatDuration(per * n)} for all ${n} panels (${frames * n} frames).`
@@ -538,7 +558,14 @@ function setupTargetForm() {
     const f = form.elements;
     switch (e.target.name) {
       case 'name': t.name = f.name.value.trim() || 'Target'; break;
-      case 'rigId': t.rigId = f.rigId.value; break;
+      case 'rigId': {
+        t.rigId = f.rigId.value;
+        // Follow the rig's usual overlap, unless it was changed by hand.
+        const sa = isSa(rigById(t.rigId));
+        if (sa && t.overlap === DEFAULT_OVERLAP) t.overlap = SA_OVERLAP;
+        if (!sa && t.overlap === SA_OVERLAP) t.overlap = DEFAULT_OVERLAP;
+        break;
+      }
       case 'ra': { const v = parseRa(f.ra.value); if (Number.isFinite(v) && v >= 0 && v < 360) { t.ra = v; centreOn(t); } break; }
       case 'dec': { const v = parseDec(f.dec.value); if (Number.isFinite(v) && Math.abs(v) <= 90) { t.dec = v; centreOn(t); } break; }
       case 'locked': t.locked = f.locked.checked; if (!t.locked) centreOn(t); break;
@@ -655,7 +682,8 @@ function setupCsv() {
       name: t.name,
       target: { name: t.name, centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov: rigFov(rigById(t.rigId)) },
       exposures: t.seqs,
-    })), { rig: rig ? { name: rig.name, focalLength: rig.focalLength, fov: rigFov(rig) } : null });
+      angle: targetAngle(t),
+    })), { rig: rig ? { name: rig.name, focalLength: rig.focalLength, fov: rigFov(rig), angle: rigAngle(rig) } : null });
   };
   const sendFile = (targets, out = status) => {
     const rig = rigById(targets[0].rigId);
