@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASIAIR Mosaic Planner</title>
+  <meta name="description" content="Plan single targets and mosaics for ZWO ASIAIR rigs on real sky images, then paste the panels into the ASIAIR app.">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="side">
+      <header class="brand">
+        <div class="brand-row">
+          <h1>ASIAIR Mosaic Planner</h1>
+          <div class="tools">
+            <button id="export-plan" class="ghost small" title="Save your rigs and targets to a file">Save</button>
+            <label class="button ghost small" title="Open a saved plan file">Open<input id="import-plan" type="file" accept=".json,application/json" hidden></label>
+          </div>
+        </div>
+        <label class="survey">Sky
+          <select id="survey" aria-label="Sky survey">
+            <option value="P/DSS2/color">DSS colour</option>
+            <option value="CDS/P/PanSTARRS/DR1/color-z-zg-g">Pan-STARRS colour (north of −30°)</option>
+            <option value="P/DSS2/red">DSS red</option>
+            <option value="P/Mellinger/color">Mellinger (wide fields)</option>
+            <option value="CDS/P/DESI-Legacy-Surveys/DR10/color">DESI Legacy (faint galaxies)</option>
+          </select>
+        </label>
+      </header>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Rigs</h2>
+          <button id="add-rig" class="small">Add rig</button>
+        </div>
+        <ul id="rig-list" class="list"></ul>
+        <form id="rig-form" class="form hidden" autocomplete="off">
+          <label class="s4">Name <input name="name" required maxlength="40"></label>
+          <label class="s2">Colour <input name="color" type="color"></label>
+          <label class="s3">Controller <select name="controller">
+            <option value="asiair">ASIAIR</option>
+            <option value="star-adventurer">Star Adventurer controller</option>
+          </select></label>
+          <label class="s3 sa-only">Address <input name="address" placeholder="http://rig.local" maxlength="120"></label>
+          <label class="s6">Camera <select name="preset"></select></label>
+          <label class="s3">Focal length (mm) <input name="focalLength" type="number" step="0.1" min="1" required></label>
+          <label class="s3">Pixel size (µm) <input name="pixelSize" type="number" step="0.01" min="0.1" required></label>
+          <label class="s3">Sensor width (px) <input name="sensorWidthPx" type="number" step="1" min="1" required></label>
+          <label class="s3">Sensor height (px) <input name="sensorHeightPx" type="number" step="1" min="1" required></label>
+          <p class="hint s6">Have a plate solve? Its field of view is more exact than the sums above. Leave blank to work it out.</p>
+          <label class="s3">Solved width (°) <input name="fovWidth" type="number" step="0.001" min="0"></label>
+          <label class="s3">Solved height (°) <input name="fovHeight" type="number" step="0.001" min="0"></label>
+          <label class="s3">Camera angle (°) <input name="angle" type="number" step="0.1" min="0" max="360" placeholder="0"></label>
+          <p class="hint s3 angle-hint">The angle the ASIAIR shows after a plate solve. New targets use it.</p>
+          <p class="hint s6" id="rig-fov-summary"></p>
+          <div class="row s6">
+            <button type="submit">Save rig</button>
+            <button type="button" id="rig-cancel" class="ghost">Cancel</button>
+            <button type="button" id="rig-delete" class="danger ghost">Delete</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Targets</h2>
+        </div>
+        <form id="search-form" class="search" autocomplete="off">
+          <input id="search" placeholder="M31, NGC 7000, Veil… or RA, Dec" aria-label="Find a target">
+          <button type="submit">Add</button>
+        </form>
+        <p id="search-status" class="hint" role="status"></p>
+        <ul id="target-list" class="list"></ul>
+      </section>
+
+      <section class="card" id="editor" hidden>
+        <div class="card-head">
+          <h2 id="editor-title">Target</h2>
+          <button id="target-delete" class="small danger ghost">Remove</button>
+        </div>
+        <form id="target-form" class="form" autocomplete="off">
+          <label class="s4">Name <input name="name" maxlength="60"></label>
+          <label class="s2">Rig <select name="rigId"></select></label>
+          <label class="s3">RA <input name="ra" placeholder="05 35 17.3"></label>
+          <label class="s3">Dec <input name="dec" placeholder="−05 23 28"></label>
+          <label class="s6 check"><input type="checkbox" name="locked"> <span>Lock position <span class="hint">· otherwise drag the sky to move it</span></span></label>
+          <label class="s2">Columns <input name="cols" type="number" min="1" max="12" step="1"></label>
+          <label class="s2">Rows <input name="rows" type="number" min="1" max="12" step="1"></label>
+          <label class="s2">Overlap % <input name="overlapNum" type="number" min="0" max="50" step="1"></label>
+          <label class="s6 check"><input type="checkbox" name="useRigAngle"> <span>Use the rig’s camera angle <span id="rig-angle"></span></span></label>
+          <label class="s6">Camera angle (° as the ASIAIR shows it) <span class="pair"><input name="pa" type="range" min="0" max="360" step="0.5" aria-label="Angle slider"><input name="paNum" type="number" min="0" max="360" step="0.1" aria-label="Angle"></span></label>
+          <p id="angle-note" class="hint s6 warn" hidden></p>
+        </form>
+        <p id="target-summary" class="summary"></p>
+        <details>
+          <summary>Panel centres</summary>
+          <div class="table-wrap">
+            <table class="panels">
+              <thead><tr><th>Name</th><th>RA</th><th>Dec</th><th>ASIAIR angle</th></tr></thead>
+              <tbody id="panel-rows"></tbody>
+            </table>
+          </div>
+        </details>
+
+        <div class="sub-head">
+          <h3>Exposures <span class="hint">every panel</span></h3>
+          <button id="add-seq" class="small ghost">Add line</button>
+        </div>
+        <div class="seq seq-labels" aria-hidden="true"><span>Type</span><span>Exp (s)</span><span>Gain</span><span>Count</span><span>Bin</span><span></span></div>
+        <div id="seq-list" class="seqs"></div>
+        <p id="seq-summary" class="summary"></p>
+
+        <div id="send" class="send" hidden>
+          <div id="send-sa" hidden>
+            <div class="sub-head"><h3>To the Star Adventurer controller</h3></div>
+            <p class="hint">Sends the panels and the first Light exposure line straight to the controller over your WiFi. It only stores the plan; nothing moves or shoots until you start it on the controller’s page. Works when this planner is opened from your computer (http://localhost) on the same network as the controller.</p>
+            <div class="row">
+              <button id="sa-send-target">Send to rig: this target</button>
+              <button id="sa-send-rig" class="ghost">Send to rig: all for rig</button>
+            </div>
+            <p class="hint">Or save a send file and load it on the controller’s page.</p>
+            <div class="row">
+              <button id="sa-file-target" class="ghost small">Save send file</button>
+            </div>
+            <p id="sa-status" class="hint" role="status"></p>
+          </div>
+          <div id="send-asiair">
+          <div class="sub-head"><h3>To the ASIAIR</h3></div>
+          <p class="hint">With the <strong>ASIAIR Plan Sender</strong> app: save a send file, then open it in the Sender with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included.</p>
+          <div class="row">
+            <button id="send-target">Send file: this target</button>
+            <button id="send-rig" class="ghost">Send file: all for rig</button>
+          </div>
+          <p class="hint">Or by hand: copy the panels and paste them with Import in the ASIAIR app’s plan.</p>
+          <div class="row">
+            <button id="copy-target" class="ghost small">Copy this target</button>
+            <button id="copy-rig" class="ghost small">Copy all for rig</button>
+            <button id="download-text" class="ghost small" title="Download as a text file">Download</button>
+          </div>
+          <p id="copy-status" class="hint" role="status"></p>
+          <details id="csv-box">
+            <summary>Show the text</summary>
+            <textarea id="csv-text" readonly rows="6" spellcheck="false" aria-label="Plan text for the ASIAIR app"></textarea>
+          </details>
+          <details class="howto">
+            <summary>How to load it into the ASIAIR app</summary>
+            <ol>
+              <li>In the ASIAIR app, open Plan and make or open the plan you want. Pasting adds targets to the open plan.</li>
+              <li>Tap Import and paste. Each panel becomes a target, named like “NGC 7000_1-2”.</li>
+              <li>The app can’t take exposures from pasted text, so open one panel, add the exposure lines shown here, then use its copy button: “Copy Schedule to All”.</li>
+              <li>Before the first night, plate-solve one frame and set the camera angle to match the angle here. The ASIAIR doesn’t store an angle for pasted targets.</li>
+            </ol>
+            <p>The text is in the ASIAIR app’s own format (the one its Share button writes), J2000.</p>
+          </details>
+          </div>
+        </div>
+      </section>
+
+      <p class="hint foot">Your rigs and targets stay in this browser. Sky images come from CDS HiPS surveys via Aladin Lite. Unofficial; not made by ZWO.</p>
+    </aside>
+
+    <main class="sky">
+      <div id="aladin"></div>
+      <div id="sky-error" class="sky-error" hidden></div>
+    </main>
+  </div>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

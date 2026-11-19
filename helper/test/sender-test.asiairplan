@@ -1,0 +1,72 @@
+{
+  "format": "asiair-plan-sender",
+  "version": 1,
+  "created": "2026-11-18T15:38:35.123Z",
+  "rig": {
+    "name": "Example rig"
+  },
+  "plans": [
+    {
+      "name": "Sender test K",
+      "importText": "Name,RA,DEC,Angle\nIC 1396_1-1,21h 41m 53s,+57° 32′ 18″,\nIC 1396_1-2,21h 37m 52s,+57° 51′ 57″,\nIC 1396_2-1,21h 40m 02s,+57° 08′ 00″,\nIC 1396_2-2,21h 36m 03s,+57° 27′ 27″,",
+      "targets": [
+        {
+          "name": "IC 1396_1-1",
+          "ra": 325.4706178168412,
+          "dec": 57.53834525012712
+        },
+        {
+          "name": "IC 1396_1-2",
+          "ra": 324.46584048102517,
+          "dec": 57.86596409567876
+        },
+        {
+          "name": "IC 1396_2-1",
+          "ra": 325.00871228934216,
+          "dec": 57.13345324245402
+        },
+        {
+          "name": "IC 1396_2-2",
+          "ra": 324.0109997166951,
+          "dec": 57.457442052830416
+        }
+      ],
+      "exposures": [
+        {
+          "type": "Light",
+          "exposure": 300,
+          "gain": null,
+          "count": 10,
+          "bin": 1
+        },
+        {
+          "type": "Light",
+          "exposure": 60,
+          "gain": 100,
+          "count": 5,
+          "bin": 2
+        }
+      ]
+    },
+    {
+      "name": "Sender test L",
+      "importText": "Name,RA,DEC,Angle\nM33,01h 33m 51s,+30° 39′ 36″,",
+      "targets": [
+        {
+          "name": "M33",
+          "ra": 23.4621,
+          "dec": 30.6599
+        }
+      ],
+      "exposures": [
+        {
+          "type": "Light",
+          "exposure": 120,
+          "gain": 100,
+          "count": 20,
+          "bin": 1
+        }
+      ]
+    }
+  ]
+}
