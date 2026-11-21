@@ -4,7 +4,7 @@ import {
   cameraFov, fromTangent, toTangent, bearing, separation, mosaicPanels, frameCorners,
   telescopiusCsv, formatRaTelescopius, formatDecTelescopius, parseRa, parseDec, mosaicExtent,
   formatRaAsiair, formatDecAsiair, asiairPlanText, sequenceSeconds, formatDuration,
-  asiairToPa, paToAsiair, senderFile, rigPlanUrl,
+  asiairToPa, paToAsiair, senderFile, orderPanels, rigPlanUrl,
 } from '../src/mosaic.js';
 
 const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} ${a} vs ${b} (±${tol})`);
@@ -145,6 +145,22 @@ test('send file for the ASIAIR Plan Sender', () => {
   assert.deepEqual(f.plans[0].exposures, [{ type: 'Light', exposure: 300, gain: null, count: 10, bin: 2 }], 'empty lines dropped, blank gain is null');
   assert.deepEqual(f.plans[1].exposures, [{ type: 'Dark', exposure: 120, gain: 100, count: 20, bin: 1 }]);
   assert.equal(f.plans[1].targets[0].name, 'M33');
+});
+
+test('panel order: row by row, or column by column back and forth', () => {
+  const fov = { width: 1, height: 1 };
+  const panels = mosaicPanels({ centre: { ra: 80, dec: 10 }, pa: 180, cols: 3, rows: 2, overlap: 0.2, fov });
+  const names = (ps) => ps.map((p) => `${p.row}-${p.col}`).join(' ');
+  assert.equal(names(orderPanels(panels)), '1-1 1-2 1-3 2-1 2-2 2-3');
+  assert.equal(names(orderPanels(panels, 'serpentine')), '1-1 2-1 2-2 1-2 1-3 2-3');
+  // Each step in the serpentine order is to a neighbouring panel.
+  const s = orderPanels(panels, 'serpentine');
+  for (let i = 1; i < s.length; i++) {
+    assert.equal(Math.abs(s[i].row - s[i - 1].row) + Math.abs(s[i].col - s[i - 1].col), 1);
+  }
+  const f = senderFile([{ name: 'M', target: { name: 'M', centre: { ra: 80, dec: 10 }, pa: 180, cols: 3, rows: 2, overlap: 0.2, fov, order: 'serpentine' }, exposures: [] }]);
+  assert.equal(f.plans[0].targets.map((t) => t.name).join(' '), 'M_1-1 M_2-1 M_2-2 M_1-2 M_1-3 M_2-3');
+  assert.match(f.plans[0].importText, /^Name,RA,DEC,Angle\nM_1-1,.*\nM_2-1,/);
 });
 
 test('exposure totals', () => {

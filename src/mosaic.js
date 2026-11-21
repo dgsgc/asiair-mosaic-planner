@@ -275,10 +275,33 @@ export function panelName(name, panel, count) {
  * given. Each target: {name, centre: {ra, dec}, pa, cols, rows, overlap, fov}.
  * No centre row (the app would make it a target of its own).
  */
+/**
+ * The order panels are shot in (names keep their row and column):
+ *   'rows'       row by row, left to right (the default; Telescopius order)
+ *   'serpentine' column by column, down the first column, up the next, …
+ *                so moving between neighbouring panels is one short step
+ *                (a Star Adventurer controller moves DEC within a column).
+ */
+export const PANEL_ORDERS = ['rows', 'serpentine'];
+
+export function orderPanels(panels, order = 'rows') {
+  if (order !== 'serpentine') return panels;
+  const cols = Math.max(...panels.map((p) => p.col));
+  const out = [];
+  for (let c = 1; c <= cols; c++) {
+    const col = panels.filter((p) => p.col === c).sort((a, b) => a.row - b.row);
+    out.push(...(c % 2 ? col : col.reverse()));
+  }
+  return out;
+}
+
+/** The panels of a target in its shooting order. */
+export const targetPanels = (t) => orderPanels(mosaicPanels(t), t.order);
+
 export function asiairPlanText(targets) {
   const lines = ['Name,RA,DEC,Angle'];
   for (const t of targets) {
-    const panels = mosaicPanels(t);
+    const panels = targetPanels(t);
     for (const p of panels) {
       lines.push(`${panelName(t.name, p, panels.length)},${formatRaAsiair(p.ra)},${formatDecAsiair(p.dec)},`);
     }
@@ -300,7 +323,7 @@ export function senderFile(plans, { rig = null, created = new Date().toISOString
     created,
     rig,
     plans: plans.map(({ name, target, exposures, angle }) => {
-      const panels = mosaicPanels(target);
+      const panels = targetPanels(target);
       return {
         name: String(name).replace(/[\r\n]+/g, ' ').trim() || 'Plan',
         ...(Number.isFinite(angle) ? { angle: Math.round(angle * 10) / 10 } : {}),

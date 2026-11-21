@@ -2,7 +2,7 @@ import A from 'https://cdn.jsdelivr.net/npm/aladin-lite@3.8.2/dist/aladin.js';
 import {
   rigFov, cameraFov, mosaicPanels, mosaicExtent, asiairPlanText, panelName,
   sequenceSeconds, formatDuration, formatRa, formatDec, parseRa, parseDec,
-  asiairToPa, paToAsiair, senderFile, rigPlanUrl,
+  asiairToPa, paToAsiair, senderFile, orderPanels, PANEL_ORDERS, rigPlanUrl,
 } from './mosaic.js';
 
 // ---- cameras -------------------------------------------------------------
@@ -40,6 +40,9 @@ function defaultState() {
 const DEFAULT_OVERLAP = 0.15;
 // Star Adventurer controller mosaics are shot with 20% overlap.
 const SA_OVERLAP = 0.2;
+// Star Adventurer controllers shoot a column at a time (DEC moves within a
+// column), so their panels go column by column, back and forth.
+const defaultOrder = (rig) => (isSa(rig) ? 'serpentine' : 'rows');
 const SEQ_TYPES = ['Light', 'Dark', 'Flat', 'Bias'];
 const newSeq = () => ({ type: 'Light', exp: 300, gain: '', repeat: 10, bin: 1 });
 
@@ -57,6 +60,7 @@ function upgrade(s) {
   }
   for (const t of s.targets) {
     if (!Array.isArray(t.seqs)) t.seqs = [newSeq()];
+    if (!PANEL_ORDERS.includes(t.order)) t.order = 'rows';
     if (typeof t.useRigAngle !== 'boolean') t.useRigAngle = !t.pa;
     // Version 1 kept a target's own angle as a position angle; from version 2
     // every angle is stored the way the ASIAIR shows it.
@@ -370,7 +374,7 @@ function addTarget(name, ra, dec) {
   if (!rig) { $('#search-status').textContent = 'Add a rig first.'; return; }
   // A new target copies the exposures of the one selected before, if any.
   const seqs = selected()?.seqs?.map((s) => ({ ...s })) ?? [newSeq()];
-  const t = { id: uid(), name, rigId: rig.id, ra, dec, pa: rigAngle(rig), useRigAngle: true, cols: 1, rows: 1, overlap: isSa(rig) ? SA_OVERLAP : DEFAULT_OVERLAP, seqs };
+  const t = { id: uid(), name, rigId: rig.id, ra, dec, pa: rigAngle(rig), useRigAngle: true, cols: 1, rows: 1, overlap: isSa(rig) ? SA_OVERLAP : DEFAULT_OVERLAP, order: defaultOrder(rig), seqs };
   state.targets.push(t);
   state.selectedId = t.id;
   changed();
@@ -428,6 +432,8 @@ function renderEditor() {
   set('cols', t.cols);
   set('rows', t.rows);
   set('overlapNum', Math.round(t.overlap * 100));
+  set('order', t.order || 'rows');
+  $('#order-row').hidden = t.cols * t.rows === 1;
   $('#editor-title').textContent = t.name;
 
   const rig = rigById(t.rigId);
@@ -446,8 +452,9 @@ function renderEditor() {
   $('#send-asiair').hidden = isSa(rig);
   const rows = $('#panel-rows');
   rows.replaceChildren();
-  for (const p of mosaicPanels({ centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov })) {
-    rows.append(el('tr', {}, el('td', {}, panelName(t.name, p, n)),
+  const ordered = orderPanels(mosaicPanels({ centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov }), t.order);
+  for (const [i, p] of ordered.entries()) {
+    rows.append(el('tr', {}, el('td', {}, n > 1 ? `${i + 1}. ${panelName(t.name, p, n)}` : panelName(t.name, p, n)),
       el('td', {}, formatRa(p.ra)), el('td', {}, formatDec(p.dec)), el('td', {}, `${paToAsiair(p.pa).toFixed(1)}°`)));
   }
   renderSeqs(t);
@@ -457,11 +464,15 @@ function renderEditor() {
 function renderSeqs(t) {
   const list = $('#seq-list');
   // Leave the list alone while someone is typing in it.
-  if (list.contains(document.activeElement) && list.dataset.for === t.id) {
+  // Star Adventurer controllers set the camera's ISO themselves and don't
+  // bin, so gain and binning are shown greyed out for them.
+  const sa = isSa(rigById(t.rigId));
+  const key = `${t.id}:${sa}`;
+  if (list.contains(document.activeElement) && list.dataset.for === key) {
     updateSeqSummary(t);
     return;
   }
-  list.dataset.for = t.id;
+  list.dataset.for = key;
   list.replaceChildren();
   if (!t.seqs.length) list.append(el('p', { class: 'empty' }, 'No exposures yet.'));
   $('.seq-labels').hidden = !t.seqs.length;
@@ -472,6 +483,10 @@ function renderSeqs(t) {
     const binSel = el('select', { 'data-i': i, 'data-k': 'bin', 'aria-label': 'Binning' },
       ...[1, 2, 3, 4].map((b) => el('option', { value: String(b) }, String(b))));
     binSel.value = String(s.bin);
+    if (sa) {
+      binSel.disabled = true;
+      binSel.title = 'The Star Adventurer controller doesn’t bin';
+    }
     const num = (k, label, attrs = {}) => {
       const inp = el('input', { type: 'number', 'data-i': i, 'data-k': k, min: '0', 'aria-label': label, ...attrs });
       inp.value = s[k] ?? '';
@@ -480,7 +495,9 @@ function renderSeqs(t) {
     list.append(el('div', { class: 'seq' },
       typeSel,
       num('exp', 'Exposure in seconds', { step: 'any' }),
-      num('gain', 'Gain (blank for default)', { step: '1', placeholder: 'auto' }),
+      sa
+        ? el('input', { type: 'text', disabled: '', 'aria-label': 'Gain (set by the controller)', placeholder: 'ISO', title: 'The Star Adventurer controller sets the camera’s ISO itself' })
+        : num('gain', 'Gain (blank for default)', { step: '1', placeholder: 'auto' }),
       num('repeat', 'Frame count', { step: '1' }),
       binSel,
       el('button', { class: 'small ghost danger remove', type: 'button', 'data-remove': i, 'aria-label': 'Remove line', title: 'Remove line' }, '×')));
@@ -505,8 +522,8 @@ function updateSeqSummary(t) {
     note.textContent = !used.length
       ? 'The Star Adventurer controller needs a Light line: it shoots only the first one.'
       : extra > 0
-        ? `The Star Adventurer controller shoots only the first Light line; the other ${extra === 1 ? 'line is' : `${extra} lines are`} ignored. Gain and binning don’t apply.`
-        : 'The Star Adventurer controller shoots this Light line on every panel. Gain and binning don’t apply.';
+        ? `The Star Adventurer controller shoots only the first Light line; the other ${extra === 1 ? 'line is' : `${extra} lines are`} ignored. The controller sets the ISO itself; gain and binning don’t apply.`
+        : 'The Star Adventurer controller shoots this Light line on every panel and sets the ISO itself, so gain and binning don’t apply.';
   }
   $('#seq-summary').textContent = per
     ? (n > 1
@@ -564,6 +581,8 @@ function setupTargetForm() {
         const sa = isSa(rigById(t.rigId));
         if (sa && t.overlap === DEFAULT_OVERLAP) t.overlap = SA_OVERLAP;
         if (!sa && t.overlap === SA_OVERLAP) t.overlap = DEFAULT_OVERLAP;
+        if (sa && t.order === 'rows') t.order = 'serpentine';
+        if (!sa && t.order === 'serpentine') t.order = 'rows';
         break;
       }
       case 'ra': { const v = parseRa(f.ra.value); if (Number.isFinite(v) && v >= 0 && v < 360) { t.ra = v; centreOn(t); } break; }
@@ -574,6 +593,7 @@ function setupTargetForm() {
       case 'paNum': t.pa = clamp(parseFloat(f.paNum.value), 0, 360, t.pa); f.pa.value = t.pa; break;
       case 'cols': t.cols = Math.round(clamp(parseFloat(f.cols.value), 1, 12, t.cols)); break;
       case 'rows': t.rows = Math.round(clamp(parseFloat(f.rows.value), 1, 12, t.rows)); break;
+      case 'order': t.order = PANEL_ORDERS.includes(f.order.value) ? f.order.value : 'rows'; break;
       case 'overlapNum': t.overlap = clamp(parseFloat(f.overlapNum.value), 0, 50, t.overlap * 100) / 100; break;
       default: return;
     }
@@ -640,7 +660,7 @@ async function resolveName(name) {
 // ---- text for the ASIAIR app ---------------------------------------------
 function textForTargets(targets) {
   return asiairPlanText(targets.filter((t) => rigById(t.rigId)).map((t) => ({
-    name: t.name, centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov: rigFov(rigById(t.rigId)),
+    name: t.name, centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, order: t.order, fov: rigFov(rigById(t.rigId)),
   })));
 }
 
@@ -680,7 +700,7 @@ function setupCsv() {
     const rig = rigById(targets[0].rigId);
     return senderFile(targets.filter((t) => rigById(t.rigId)).map((t) => ({
       name: t.name,
-      target: { name: t.name, centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov: rigFov(rigById(t.rigId)) },
+      target: { name: t.name, centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, order: t.order, fov: rigFov(rigById(t.rigId)) },
       exposures: t.seqs,
       angle: targetAngle(t),
     })), { rig: rig ? { name: rig.name, focalLength: rig.focalLength, fov: rigFov(rig), angle: rigAngle(rig) } : null });

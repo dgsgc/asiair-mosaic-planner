@@ -9,6 +9,7 @@ It's a single web page with no server of its own. Your rigs and targets stay in 
 - **Rigs:** add each rig's focal length and camera (common ZWO cameras are listed), or type the field of view from a plate solve, which is more exact. Each rig gets a colour, so several rigs can be planned side by side.
 - **Targets:** search by name (M31, NGC 7000, Veil Nebula, anything SIMBAD, NED or VizieR know) or type "RA, Dec". The rig's frame is drawn on sky survey images (DSS, Pan-STARRS and others).
 - **Framing by dragging:** the selected target's frame or mosaic stays in the middle of the sky view; drag the sky underneath it to frame the shot. Tick "Lock position" once you're happy, so later panning doesn't move it.
+- **Panel order:** row by row (the default for ASIAIR rigs), or column by column, back and forth. The order is the order of the pasted or sent panels, so it's the order they're shot in; the panel table numbers them.
 - **Mosaics:** set columns, rows, overlap (15% by default, as the ASIAIR app recommends) and angle. The panel centres and each panel's own angle are worked out on the sky, not on a flat grid.
 - **Exposures:** give each target its exposure lines (type, exposure, gain, count, binning) and see the time per panel and for the whole mosaic.
 - **Into the ASIAIR app:** "Copy this target" or "Copy all for <rig>" puts the panels on the clipboard in the ASIAIR app's own plan text format (the one its Share button writes). Paste it with Import on the app's Plan screen. Panels are named the way the app names its own mosaics, for example `NGC 7000_1-2`.
@@ -42,7 +43,8 @@ A rig can instead be set to **Controller: Star Adventurer controller** (in the r
 
 For these rigs:
 - **Overlap:** new targets start with 20% overlap.
-- **Exposure lines:** the exposures section says which line the controller will shoot, and warns when other lines will be ignored. Totals count only that line.
+- **Exposure lines:** the exposures section says which line the controller will shoot, and warns when other lines will be ignored. Totals count only that line. Gain and binning are greyed out, because the controller sets the camera's ISO itself.
+- **Panel order:** panels go column by column, down one column and up the next, so each move to the next panel is one short step. That suits a controller that moves DEC within a column.
 - **Camera angle:** the send file carries the camera angle (as the ASIAIR shows it), both the rig's (`rig.angle`) and each plan's own (`plans[].angle`). The controller can then warn when the camera is turned differently.
 
 Browsers only let a page send to a device on your network when the page itself is local, so open the planner from your computer (`http://localhost`, see [Using it](#using-it)). From an https copy, use **Save send file** and load the file on the controller's page instead.
