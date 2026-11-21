@@ -452,7 +452,7 @@ function renderEditor() {
   $('#send-asiair').hidden = isSa(rig);
   const rows = $('#panel-rows');
   rows.replaceChildren();
-  const ordered = orderPanels(mosaicPanels({ centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov }), t.order);
+  const ordered = orderPanels(mosaicPanels({ centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov }), t.order, targetPa(t));
   for (const [i, p] of ordered.entries()) {
     rows.append(el('tr', {}, el('td', {}, n > 1 ? `${i + 1}. ${panelName(t.name, p, n)}` : panelName(t.name, p, n)),
       el('td', {}, formatRa(p.ra)), el('td', {}, formatDec(p.dec)), el('td', {}, `${paToAsiair(p.pa).toFixed(1)}°`)));

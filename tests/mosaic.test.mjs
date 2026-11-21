@@ -147,20 +147,29 @@ test('send file for the ASIAIR Plan Sender', () => {
   assert.equal(f.plans[1].targets[0].name, 'M33');
 });
 
-test('panel order: row by row, or column by column back and forth', () => {
-  const fov = { width: 1, height: 1 };
-  const panels = mosaicPanels({ centre: { ra: 80, dec: 10 }, pa: 180, cols: 3, rows: 2, overlap: 0.2, fov });
+test('panel order: row by row, or back and forth in DEC', () => {
+  const fov = { width: 1, height: 0.7 };
   const names = (ps) => ps.map((p) => `${p.row}-${p.col}`).join(' ');
-  assert.equal(names(orderPanels(panels)), '1-1 1-2 1-3 2-1 2-2 2-3');
-  assert.equal(names(orderPanels(panels, 'serpentine')), '1-1 2-1 2-2 1-2 1-3 2-3');
-  // Each step in the serpentine order is to a neighbouring panel.
-  const s = orderPanels(panels, 'serpentine');
-  for (let i = 1; i < s.length; i++) {
-    assert.equal(Math.abs(s[i].row - s[i - 1].row) + Math.abs(s[i].col - s[i - 1].col), 1);
+  const decStep = (a, b) => Math.abs(b.dec - a.dec);
+  const raStep = (a, b) => separation(a.ra, a.dec, b.ra, a.dec);
+  for (const [asiair, expect] of [[180, '1-1 2-1 2-2 1-2 1-3 2-3'], [0, '1-1 2-1 2-2 1-2 1-3 2-3'], [90, '1-1 1-2 1-3 2-3 2-2 2-1'], [270, '1-1 1-2 1-3 2-3 2-2 2-1']]) {
+    const pa = asiairToPa(asiair);
+    const panels = mosaicPanels({ centre: { ra: 80, dec: 10 }, pa, cols: 3, rows: 2, overlap: 0.2, fov });
+    assert.equal(names(orderPanels(panels)), '1-1 1-2 1-3 2-1 2-2 2-3', 'row by row');
+    const s = orderPanels(panels, 'serpentine', pa);
+    assert.equal(names(s), expect, `ASIAIR angle ${asiair}`);
+    // Within a group the moves are in DEC; between groups, one step in RA.
+    let raMoves = 0;
+    for (let i = 1; i < s.length; i++) {
+      assert.equal(Math.abs(s[i].row - s[i - 1].row) + Math.abs(s[i].col - s[i - 1].col), 1, 'neighbours');
+      if (raStep(s[i - 1], s[i]) > decStep(s[i - 1], s[i])) raMoves++;
+    }
+    const groups = new Set(s.map((p) => (Math.abs(Math.cos((pa * Math.PI) / 180)) >= Math.abs(Math.sin((pa * Math.PI) / 180)) ? p.col : p.row))).size;
+    assert.equal(raMoves, groups - 1, `ASIAIR angle ${asiair}: one RA move per group`);
   }
-  const f = senderFile([{ name: 'M', target: { name: 'M', centre: { ra: 80, dec: 10 }, pa: 180, cols: 3, rows: 2, overlap: 0.2, fov, order: 'serpentine' }, exposures: [] }]);
-  assert.equal(f.plans[0].targets.map((t) => t.name).join(' '), 'M_1-1 M_2-1 M_2-2 M_1-2 M_1-3 M_2-3');
-  assert.match(f.plans[0].importText, /^Name,RA,DEC,Angle\nM_1-1,.*\nM_2-1,/);
+  const f = senderFile([{ name: 'M', target: { name: 'M', centre: { ra: 80, dec: 10 }, pa: asiairToPa(90), cols: 3, rows: 2, overlap: 0.2, fov, order: 'serpentine' }, exposures: [] }]);
+  assert.equal(f.plans[0].targets.map((t) => t.name).join(' '), 'M_1-1 M_1-2 M_1-3 M_2-3 M_2-2 M_2-1');
+  assert.match(f.plans[0].importText, /^Name,RA,DEC,Angle\nM_1-1,.*\nM_1-2,/);
 });
 
 test('exposure totals', () => {

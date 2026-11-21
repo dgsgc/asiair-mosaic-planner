@@ -278,25 +278,34 @@ export function panelName(name, panel, count) {
 /**
  * The order panels are shot in (names keep their row and column):
  *   'rows'       row by row, left to right (the default; Telescopius order)
- *   'serpentine' column by column, down the first column, up the next, …
- *                so moving between neighbouring panels is one short step
- *                (a Star Adventurer controller moves DEC within a column).
+ *   'serpentine' back and forth in DEC: panels are grouped along the grid
+ *                direction closer to east–west, and within each group swept
+ *                along the direction closer to north–south, reversing each
+ *                group. Consecutive panels then differ in DEC, apart from one
+ *                RA step per group (a Star Adventurer controller moves DEC
+ *                itself). `pa` is the frame top's position angle: near 0°/180°
+ *                that sweeps down the columns, near 90°/270° along the rows.
  */
 export const PANEL_ORDERS = ['rows', 'serpentine'];
 
-export function orderPanels(panels, order = 'rows') {
+export function orderPanels(panels, order = 'rows', pa = 0) {
   if (order !== 'serpentine') return panels;
-  const cols = Math.max(...panels.map((p) => p.col));
+  // The grid's columns run along the frame's "up", which points to `pa`.
+  const t = (pa * Math.PI) / 180;
+  const columnsAreNorthSouth = Math.abs(Math.cos(t)) >= Math.abs(Math.sin(t));
+  const group = columnsAreNorthSouth ? 'col' : 'row';
+  const along = columnsAreNorthSouth ? 'row' : 'col';
+  const n = Math.max(...panels.map((p) => p[group]));
   const out = [];
-  for (let c = 1; c <= cols; c++) {
-    const col = panels.filter((p) => p.col === c).sort((a, b) => a.row - b.row);
-    out.push(...(c % 2 ? col : col.reverse()));
+  for (let g = 1; g <= n; g++) {
+    const line = panels.filter((p) => p[group] === g).sort((a, b) => a[along] - b[along]);
+    out.push(...(g % 2 ? line : line.reverse()));
   }
   return out;
 }
 
 /** The panels of a target in its shooting order. */
-export const targetPanels = (t) => orderPanels(mosaicPanels(t), t.order);
+export const targetPanels = (t) => orderPanels(mosaicPanels(t), t.order, t.pa || 0);
 
 export function asiairPlanText(targets) {
   const lines = ['Name,RA,DEC,Angle'];
