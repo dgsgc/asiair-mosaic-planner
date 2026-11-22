@@ -33,7 +33,17 @@ if ! command -v python3 >/dev/null 2>&1 || ! python3 -c 'pass' >/dev/null 2>&1; 
   exit 1
 fi
 
-nohup python3 -m http.server $PORT --bind 127.0.0.1 >/dev/null 2>&1 &
+# A plain file server, but telling the browser to check for newer files each
+# time, so an updated planner shows up straight away.
+SERVER='
+import http.server, sys
+class H(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
+'
+nohup python3 -c "$SERVER" $PORT >/dev/null 2>&1 &
 disown
 for _ in {1..40}; do
   curl -fsS --max-time 1 "$URL" >/dev/null 2>&1 && break

@@ -193,26 +193,68 @@ async function initSky() {
   ignoreMovesUntil = Date.now() + 1500;
   aladin.on('positionChanged', (e) => {
     if (!e || !Number.isFinite(e.ra) || Date.now() < ignoreMovesUntil) return;
-    const t = selected();
-    if (!t || t.locked) return;
-    t.ra = ((e.ra % 360) + 360) % 360;
-    t.dec = e.dec;
-    if (!moveFrame) {
-      moveFrame = requestAnimationFrame(() => {
-        moveFrame = 0;
-        draw();
-        renderEditor();
-      });
-    }
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { save(); renderTargets(); }, 400);
+    viewMoved(e.ra, e.dec);
   });
+  setupFastDrag($('#aladin'));
   if (t) frameTarget(t);
   // Shapes added while the view is still starting up get lost, so draw
   // again once it has had a moment, and after the survey is chosen.
   draw();
   setTimeout(draw, 400);
   showSurvey(state.survey).then(draw);
+}
+
+// The view's centre moved (by dragging): the selected target follows it.
+function viewMoved(ra, dec) {
+  const t = selected();
+  if (!t || t.locked) return;
+  t.ra = ((ra % 360) + 360) % 360;
+  t.dec = dec;
+  if (!moveFrame) {
+    moveFrame = requestAnimationFrame(() => {
+      moveFrame = 0;
+      draw();
+      renderEditor();
+    });
+  }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { save(); renderTargets(); }, 400);
+}
+
+// Aladin moves the sky exactly with the pointer, which feels slow for
+// framing. Mouse drags are taken over here and move the sky DRAG_SPEEDS
+// times as far. Touch (pinch and drag on a tablet) is left to Aladin.
+const DRAG_SPEEDS = [1, 2, 3, 4];
+const dragSpeed = () => (DRAG_SPEEDS.includes(state.dragSpeed) ? state.dragSpeed : 2);
+function setupFastDrag(box) {
+  let last = null;
+  box.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || dragSpeed() === 1 || !(e.target instanceof HTMLCanvasElement)) return;
+    e.stopPropagation();
+    e.preventDefault();
+    last = { x: e.clientX, y: e.clientY };
+    box.style.cursor = 'grabbing';
+  }, true);
+  window.addEventListener('mousemove', (e) => {
+    if (!last || !aladin) return;
+    e.stopPropagation();
+    const k = dragSpeed();
+    const dx = (e.clientX - last.x) * k;
+    const dy = (e.clientY - last.y) * k;
+    last = { x: e.clientX, y: e.clientY };
+    const [w, h] = aladin.getSize();
+    const c = aladin.pix2world(w / 2 - dx, h / 2 - dy);
+    if (!c || !Number.isFinite(c[0]) || !Number.isFinite(c[1])) return;
+    ignoreMovesUntil = Date.now() + 100;
+    aladin.gotoRaDec(c[0], c[1]);
+    viewMoved(c[0], c[1]);
+  }, true);
+  window.addEventListener('mouseup', (e) => {
+    if (!last) return;
+    e.stopPropagation();
+    last = null;
+    box.style.cursor = '';
+  }, true);
 }
 
 function frameTarget(t) {
@@ -805,6 +847,12 @@ function setupPlanFiles() {
     } catch (err) {
       alert(`Couldn't open ${file.name}: ${err.message}`);
     }
+  });
+  const speed = $('#drag-speed');
+  speed.value = String(dragSpeed());
+  speed.addEventListener('change', () => {
+    state.dragSpeed = Number(speed.value);
+    save();
   });
   const survey = $('#survey');
   survey.value = state.survey;
