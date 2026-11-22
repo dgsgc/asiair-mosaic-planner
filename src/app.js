@@ -122,13 +122,14 @@ let ignoreMovesUntil = 0;
 let moveFrame = 0;
 let saveTimer = 0;
 
-// Known copies of each survey. The CDS registry is asked for its current list
-// too; whichever copy answers first in list order is used, so the view still
-// works when one server is down.
+// Known copies of each survey, most dependable first. The first copy that
+// answers is used, so the view still works when one server is down. Only if
+// none answers is the CDS registry asked for others.
 const SURVEY_MIRRORS = {
-  'P/DSS2/color': ['https://alasky.cds.unistra.fr/DSS/DSSColor', 'https://skies.esac.esa.int/DSSColor', 'https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/color'],
-  'P/DSS2/red': ['https://alasky.cds.unistra.fr/DSS/DSS2Merged', 'https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/red'],
+  'P/DSS2/color': ['https://skies.esac.esa.int/DSSColor', 'https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/color', 'https://alasky.cds.unistra.fr/DSS/DSSColor'],
+  'P/DSS2/red': ['https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/red', 'https://alasky.cds.unistra.fr/DSS/DSS2Merged'],
   'CDS/P/PanSTARRS/DR1/color-z-zg-g': ['https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-z-zg-g'],
+  'P/SDSS9/color': ['https://irsa.ipac.caltech.edu/data/hips/CDS/SDSS/DR9/color', 'https://alasky.cds.unistra.fr/SDSS/DR9/color'],
   'P/Mellinger/color': ['https://alasky.cds.unistra.fr/MellingerRGB'],
   'CDS/P/DESI-Legacy-Surveys/DR10/color': ['https://alasky.cds.unistra.fr/DESI-legacy-surveys/DR10/CDS_P_DESI-Legacy-Surveys_DR10_color'],
 };
@@ -137,25 +138,42 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 }
 
-async function pickSurveyUrl(id) {
-  let urls = SURVEY_MIRRORS[id] ?? [];
-  try {
-    const cdsId = id.startsWith('CDS/') ? id : `CDS/${id}`;
-    const r = await withTimeout(fetch(`https://alasky.cds.unistra.fr/MocServer/query?ID=${encodeURIComponent(cdsId)}&fmt=json&get=record`), 6000);
-    const rec = (await r.json())[0] || {};
-    const listed = Object.keys(rec).filter((k) => /^hips_service_url(_\d+)?$/.test(k)).sort().map((k) => rec[k]);
-    urls = [...new Set([...urls, ...listed])];
-  } catch { /* registry unreachable: use the known copies */ }
-  const ok = await Promise.all(urls.map((u) => withTimeout(fetch(`${u}/properties`).then((r) => r.ok), 6000).catch(() => false)));
-  return urls[ok.indexOf(true)] ?? null;
+// All copies are asked at once, but the first one in list order that answers
+// wins, without waiting for slower copies further down the list.
+async function firstAnswering(urls) {
+  const checks = urls.map((u) => withTimeout(fetch(`${u}/properties`).then((r) => r.ok), 5000).catch(() => false));
+  for (let i = 0; i < urls.length; i++) if (await checks[i]) return urls[i];
+  return null;
 }
 
+async function pickSurveyUrl(id) {
+  const known = SURVEY_MIRRORS[id] ?? [];
+  const url = await firstAnswering(known);
+  if (url) return url;
+  try {
+    const cdsId = id.startsWith('CDS/') ? id : `CDS/${id}`;
+    const r = await withTimeout(fetch(`https://alasky.cds.unistra.fr/MocServer/query?ID=${encodeURIComponent(cdsId)}&fmt=json&get=record`), 5000);
+    const rec = (await r.json())[0] || {};
+    const listed = Object.keys(rec).filter((k) => /^hips_service_url(_\d+)?$/.test(k)).sort().map((k) => rec[k]);
+    return await firstAnswering(listed.filter((u) => !known.includes(u)));
+  } catch {
+    return null; // registry unreachable too
+  }
+}
+
+let surveyRequest = 0;
 async function showSurvey(id) {
   const box = $('#sky-error');
+  const request = ++surveyRequest;
   const url = await pickSurveyUrl(id);
+  if (request !== surveyRequest) return; // another survey was chosen meanwhile
   if (!url) {
+    const name = $(`#survey option[value="${id}"]`)?.textContent || 'That survey';
+    const onlyCds = (SURVEY_MIRRORS[id] ?? []).every((u) => u.includes('cds.unistra.fr'));
     box.hidden = false;
-    box.textContent = 'That sky survey can’t be reached just now. Try DSS colour, which has several copies.';
+    box.textContent = onlyCds
+      ? `${name} only comes from CDS in Strasbourg, which isn’t answering just now. DSS colour, DSS red and SDSS colour come from other servers.`
+      : `${name} can’t be reached just now. Try DSS colour, which has several copies.`;
     return;
   }
   box.hidden = true;

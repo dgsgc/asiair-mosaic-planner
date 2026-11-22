@@ -7,7 +7,7 @@ It's a single web page with no server of its own. Your rigs and targets stay in 
 ## What it does
 
 - **Rigs:** add each rig's focal length and camera (common ZWO cameras are listed), or type the field of view from a plate solve, which is more exact. Each rig gets a colour, so several rigs can be planned side by side.
-- **Targets:** search by name (M31, NGC 7000, Veil Nebula, anything SIMBAD, NED or VizieR know) or type "RA, Dec". The rig's frame is drawn on sky survey images (DSS, Pan-STARRS and others).
+- **Targets:** search by name (M31, NGC 7000, Veil Nebula, anything SIMBAD, NED or VizieR know) or type "RA, Dec". The rig's frame is drawn on sky survey images (DSS, SDSS, Pan-STARRS and others).
 - **Framing by dragging:** the selected target's frame or mosaic stays in the middle of the sky view; drag the sky underneath it to frame the shot. Tick "Lock position" once you're happy, so later panning doesn't move it. **Drag** (top left) sets how far the sky moves for each mouse drag: 1.5× by default, 1× to follow the mouse exactly. On a touch screen the sky follows your finger.
 - **Panel order:** row by row (the default for ASIAIR rigs), or back and forth in DEC: panels are grouped by RA, and each group is swept through DEC, reversing direction each time. Which way the grid is swept follows the camera angle. The order is the order of the pasted or sent panels, so it's the order they're shot in; the panel table numbers them.
 - **Mosaics:** set columns, rows, overlap (15% by default, as the ASIAIR app recommends) and angle. The panel centres and each panel's own angle are worked out on the sky, not on a flat grid.
@@ -73,7 +73,7 @@ runs the geometry tests (Node 20 or later, no packages needed). One test checks 
 
 - `src/mosaic.js` — the geometry and CSV format, with no browser code.
 - `src/app.js` — the page: rigs, targets, the sky view and copying.
-- Sky view: [Aladin Lite](https://aladin.cds.unistra.fr/AladinLite/) 3.8.2 from jsDelivr. Survey images come from CDS HiPS servers and their mirrors; the page picks a copy that's answering. Names are looked up with the CDS Sesame service (CDS and Harvard copies).
+- Sky view: [Aladin Lite](https://aladin.cds.unistra.fr/AladinLite/) 3.8.2 from jsDelivr. Survey images come from CDS HiPS servers and their mirrors at ESA and IRSA; the page uses the first copy that answers. Pan-STARRS, Mellinger and DESI Legacy only come from CDS, so they're unavailable when CDS is down; DSS colour, DSS red and SDSS colour have copies elsewhere. Names are looked up with the CDS Sesame service (CDS and Harvard copies).
 
 ## Not affiliated
 
