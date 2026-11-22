@@ -225,7 +225,7 @@ function viewMoved(ra, dec) {
 // framing. Mouse drags are taken over here and move the sky DRAG_SPEEDS
 // times as far. Touch (pinch and drag on a tablet) is left to Aladin.
 const DRAG_SPEEDS = [1, 1.5, 2];
-const dragSpeed = () => (DRAG_SPEEDS.includes(state.dragSpeed) ? state.dragSpeed : 2);
+const dragSpeed = () => (DRAG_SPEEDS.includes(state.dragSpeed) ? state.dragSpeed : 1.5);
 function setupFastDrag(box) {
   let last = null;
   box.addEventListener('mousedown', (e) => {
