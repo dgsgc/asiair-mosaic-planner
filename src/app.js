@@ -224,7 +224,7 @@ function viewMoved(ra, dec) {
 // Aladin moves the sky exactly with the pointer, which feels slow for
 // framing. Mouse drags are taken over here and move the sky DRAG_SPEEDS
 // times as far. Touch (pinch and drag on a tablet) is left to Aladin.
-const DRAG_SPEEDS = [1, 2, 3, 4];
+const DRAG_SPEEDS = [1, 1.5, 2];
 const dragSpeed = () => (DRAG_SPEEDS.includes(state.dragSpeed) ? state.dragSpeed : 2);
 function setupFastDrag(box) {
   let last = null;
