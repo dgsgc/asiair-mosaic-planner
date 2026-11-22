@@ -17,6 +17,8 @@ It's a single web page with no server of its own. Your rigs and targets stay in 
 
 ## Using it
 
+**Online:** <https://dgsgc.github.io/asiair-mosaic-planner/> works in any modern browser, iPad included. Everything except **Send to rig** works there.
+
 **On a Mac:** double-click **Open Planner.command**. It serves the planner on this Mac at <http://localhost:8077> and opens it in your browser. The first time, macOS may ask whether to open it: right-click it, choose **Open**, then **Open** again.
 - **Same address every time:** your rigs and targets are kept by your browser for that address, so always open the planner the same way.
 - **Running in the background:** the planner keeps running after the Terminal window closes, and double-clicking again reuses it.
