@@ -429,7 +429,34 @@ function setupRigForm() {
 }
 
 // ---- targets -------------------------------------------------------------
-function addTarget(name, ra, dec) {
+// A name for a target started from the sky view: Field 1, Field 2…
+function nextFieldName() {
+  const used = new Set(state.targets.map((t) => t.name));
+  let n = 1;
+  while (used.has(`Field ${n}`)) n++;
+  return `Field ${n}`;
+}
+
+// Start a target wherever the sky view is pointing. The zoom stays as it is,
+// unless the view is so wide that the new frame would be hard to see.
+function addTargetHere() {
+  if (!aladin) return;
+  const [ra, dec] = aladin.getRaDec();
+  if (!Number.isFinite(ra) || !Number.isFinite(dec)) return;
+  addTarget(nextFieldName(), ((ra % 360) + 360) % 360, dec, { keepZoom: true });
+  const t = selected();
+  const rig = t && rigById(t.rigId);
+  if (!rig) return;
+  const f = rigFov(rig);
+  const [viewW] = aladin.getFov();
+  if (viewW > 10 * Math.max(f.width, f.height)) frameTarget(t);
+  // Ready to rename.
+  const name = $('#target-form')?.elements.name;
+  name?.focus();
+  name?.select();
+}
+
+function addTarget(name, ra, dec, { keepZoom = false } = {}) {
   const rig = rigById(selected()?.rigId) || rigById(state.lastRigId) || state.rigs[0];
   if (!rig) { $('#search-status').textContent = 'Add a rig first.'; return; }
   // A new target copies the exposures of the one selected before, if any.
@@ -438,13 +465,15 @@ function addTarget(name, ra, dec) {
   state.targets.push(t);
   state.selectedId = t.id;
   changed();
-  frameTarget(t);
+  if (keepZoom) centreOn(t);
+  else frameTarget(t);
 }
 
 function renderTargets() {
   const list = $('#target-list');
   list.replaceChildren();
-  if (!state.targets.length) list.append(el('li', { class: 'empty' }, 'No targets yet. Search for one above.'));
+  if (!state.targets.length) list.append(el('li', { class: 'empty' }, 'No targets yet. Search for one above, or move around the sky and press Add here.'));
+  $('#browse').hidden = !selected();
   for (const t of state.targets) {
     const rig = rigById(t.rigId);
     list.append(el('li', {
@@ -667,6 +696,12 @@ function setupTargetForm() {
     if (!t || !confirm(`Remove ${t.name}?`)) return;
     state.targets = state.targets.filter((x) => x.id !== t.id);
     state.selectedId = state.targets[0]?.id ?? null;
+    changed();
+  });
+
+  $('#add-here').addEventListener('click', addTargetHere);
+  $('#browse').addEventListener('click', () => {
+    state.selectedId = null;
     changed();
   });
 
