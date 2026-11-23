@@ -292,6 +292,10 @@ function centreOn(t) {
   aladin.gotoRaDec(t.ra, t.dec);
 }
 
+// Mosaics other than the selected one are drawn faintly, so the one being
+// worked on stands out.
+const OTHER_OPACITY = 0.35;
+
 function draw() {
   if (!overlay) return;
   overlay.removeAll();
@@ -304,7 +308,7 @@ function draw() {
     const isSel = sel && t.id === sel.id;
     const panels = mosaicPanels({ centre: t, pa: targetPa(t), cols: t.cols, rows: t.rows, overlap: t.overlap, fov: rigFov(rig) });
     for (const p of panels) {
-      overlay.add(A.polygon(p.corners.map((c) => [...c]), { color: rig.color, lineWidth: isSel ? 2.5 : 1.2, opacity: isSel ? 1 : 0.6 }));
+      overlay.add(A.polygon(p.corners.map((c) => [...c]), { color: rig.color, lineWidth: isSel ? 2.5 : 1, opacity: isSel ? 1 : OTHER_OPACITY }));
       if (isSel && panels.length > 1) panes.push(A.source(p.ra, p.dec, { name: `${p.row}-${p.col}` }));
       if (isSel && p.index === 1) {
         // A short tick inside the top edge of pane 1 shows which way is "up" for the camera.
@@ -507,7 +511,7 @@ function addTarget(name, ra, dec, { keepZoom = false } = {}) {
 function renderTargets() {
   const list = $('#target-list');
   list.replaceChildren();
-  if (!state.targets.length) list.append(el('li', { class: 'empty' }, 'No targets yet. Search for one above, or move around the sky and press Add here.'));
+  if (!state.targets.length) list.append(el('li', { class: 'empty' }, 'No targets yet. Search for one above, or move around the sky and press Add new.'));
   $('#browse').hidden = !selected();
   for (const t of state.targets) {
     const rig = rigById(t.rigId);
