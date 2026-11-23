@@ -4,6 +4,7 @@ import {
   sequenceSeconds, formatDuration, formatRa, formatDec, parseRa, parseDec,
   asiairToPa, paToAsiair, senderFile, orderPanels, PANEL_ORDERS, rigPlanUrl,
 } from './mosaic.js';
+import { LAYERS, skyLayers } from './layers.js';
 
 // ---- cameras -------------------------------------------------------------
 // Sensor sizes for common cameras. "Custom" leaves the fields as typed.
@@ -220,6 +221,8 @@ async function initSky() {
   draw();
   setTimeout(draw, 400);
   showSurvey(state.survey).then(draw);
+  showLayer = skyLayers(A, aladin);
+  for (const l of LAYERS) if (state.layers?.[l.id]) applyLayer(l.id, true);
 }
 
 // The view's centre moved (by dragging): the selected target follows it.
@@ -319,6 +322,40 @@ function draw() {
     }
   }
   if (panes.length) labels.addSources(panes);
+}
+
+// ---- sky layers ----------------------------------------------------------
+// Grid, constellations and Messier objects, switched on and off with the
+// chips under the header. Which ones are on is kept with the rest.
+let showLayer = null;
+const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier' };
+
+function applyLayer(id, on) {
+  if (!showLayer) return;
+  const err = $('#layer-error');
+  showLayer(id, on).then(() => { err.hidden = true; }).catch(() => {
+    err.hidden = false;
+    err.textContent = `Couldn’t load the ${LAYERS.find((l) => l.id === id).label.toLowerCase()} just now. Try again in a moment.`;
+    state.layers[id] = false;
+    save();
+    renderLayerChips();
+  });
+}
+
+function renderLayerChips() {
+  const box = $('#layer-chips');
+  box.replaceChildren(...LAYERS.map((l) => {
+    const on = !!state.layers?.[l.id];
+    return el('button', {
+      type: 'button', class: `chip${on ? ' on' : ''}`, 'aria-pressed': String(on), title: l.label,
+      onclick: () => {
+        state.layers = { ...(state.layers || {}), [l.id]: !on };
+        save();
+        renderLayerChips();
+        applyLayer(l.id, !on);
+      },
+    }, LAYER_SHORT[l.id]);
+  }));
 }
 
 // ---- rigs ----------------------------------------------------------------
@@ -931,6 +968,7 @@ function setupPlanFiles() {
       alert(`Couldn't open ${file.name}: ${err.message}`);
     }
   });
+  renderLayerChips();
   const speed = $('#drag-speed');
   speed.value = String(dragSpeed());
   speed.addEventListener('change', () => {
