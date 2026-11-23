@@ -328,7 +328,7 @@ function draw() {
 // Grid, constellations and Messier objects, switched on and off with the
 // chips under the header. Which ones are on is kept with the rest.
 let showLayer = null;
-const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier', ngc: 'NGC/IC' };
+const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier', ngc: 'NGC/IC', nebulae: 'Nebulae', dark: 'Dark' };
 
 function applyLayer(id, on) {
   if (!showLayer) return;

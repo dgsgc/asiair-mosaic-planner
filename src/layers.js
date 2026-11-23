@@ -12,10 +12,37 @@ export const LAYERS = [
   { id: 'names', label: 'Constellation names' },
   { id: 'messier', label: 'Messier objects' },
   { id: 'ngc', label: 'NGC and IC objects (zoom in to about 20° to see them)' },
+  { id: 'nebulae', label: 'Bright nebulae: Sharpless (Sh2), LBN, Cederblad, RCW, van den Bergh, supernova remnants (zoom in to about 20°)' },
+  { id: 'dark', label: 'Dark nebulae: LDN and Barnard (zoom in to about 20°)' },
 ];
 
-// NGC and IC objects are too many to show over a wide view.
+// Deep-sky catalogues are too many to show over a wide view.
 export const NGC_MAX_FOV = 20;
+const ZOOMED = new Set(['ngc', 'nebulae', 'dark']);
+
+// Which catalogue prefixes (as in "RCW 58") each deep-sky layer takes from
+// d3-celestial's list.
+const DSO_PREFIXES = {
+  ngc: ['NGC', 'IC'],
+  nebulae: ['Ced', 'RCW', 'VdB', 'SNR'],
+  dark: [],
+};
+// The complete Sharpless, LBN, LDN and Barnard catalogues ship with the
+// planner (data/nebulae.json, made by tools/build_catalogues.py from VizieR),
+// because d3-celestial's list misses many of them.
+const OWN = {
+  nebulae: [['sh2', (n) => `Sh2-${n}`], ['lbn', (n) => `LBN ${n}`]],
+  dark: [['ldn', (n) => `LDN ${n}`], ['b', (n) => `B ${n}`]],
+};
+let ownData = null;
+function loadOwn() {
+  ownData ??= fetch(new URL('../data/nebulae.json', import.meta.url)).then((r) => {
+    if (!r.ok) throw new Error(`nebulae.json: ${r.status}`);
+    return r.json();
+  }).catch((e) => { ownData = null; throw e; });
+  return ownData;
+}
+const DSO_NAMES = { ngc: 'NGC and IC', nebulae: 'Bright nebulae', dark: 'Dark nebulae' };
 
 const COLOURS = {
   grid: '#8fb3ff',
@@ -24,6 +51,8 @@ const COLOURS = {
   names: '#a9c7e8',
   messier: '#ff9f6b',
   ngc: '#c79bff',
+  nebulae: '#ff7aa8',
+  dark: '#b8c0cc',
 };
 
 const rad = Math.PI / 180;
@@ -126,18 +155,23 @@ export function skyLayers(A, aladin) {
       }));
       return cat;
     }
-    if (id === 'ngc') {
-      // Objects down to magnitude 14; only the NGC and IC ones are kept.
-      const data = await load('dsos.14.json');
-      const cat = A.catalog({ name: 'NGC and IC', shape: 'circle', sourceSize: 7, color: COLOURS.ngc, displayLabel: true, labelColumn: 'name', labelColor: COLOURS.ngc, labelFont: '11px sans-serif' });
+    if (DSO_PREFIXES[id]) {
+      // d3-celestial's deep-sky list down to magnitude 14, plus the planner's
+      // own nebula catalogues; one layer per group.
+      const [data, own] = await Promise.all([load('dsos.14.json'), OWN[id] ? loadOwn() : null]);
+      const keep = new Set(DSO_PREFIXES[id]);
+      const cat = A.catalog({ name: DSO_NAMES[id], shape: id === 'dark' ? 'square' : 'circle', sourceSize: 7, color: COLOURS[id], displayLabel: true, labelColumn: 'name', labelColor: COLOURS[id], labelFont: '11px sans-serif' });
       aladin.addCatalog(cat);
       cat.addSources(data.features
-        .filter((f) => /^(NGC|IC) /.test(f.properties.desig))
+        .filter((f) => keep.has(String(f.properties.desig).split(' ')[0]))
         .map((f) => {
           const [ra, dec] = f.geometry.coordinates;
           const p = f.properties;
           return A.source(normRa(ra), dec, { name: p.desig, type: p.type || '', mag: p.mag || '' });
         }));
+      for (const [key, label] of OWN[id] ?? []) {
+        cat.addSources((own[key] ?? []).map(([n, ra, dec, size]) => A.source(ra, dec, { name: label(n), size: size ?? '' })));
+      }
       return cat;
     }
     return null;
@@ -146,7 +180,7 @@ export function skyLayers(A, aladin) {
   // Layers that should only show when zoomed in.
   const wanted = new Map();
   let fov = aladin.getFov()[0];
-  const visible = (id) => wanted.get(id) && (id !== 'ngc' || fov <= NGC_MAX_FOV);
+  const visible = (id) => wanted.get(id) && (!ZOOMED.has(id) || fov <= NGC_MAX_FOV);
   async function refresh(id) {
     if (!made.has(id)) return;
     const layer = await made.get(id).catch(() => null);
@@ -154,7 +188,7 @@ export function skyLayers(A, aladin) {
   }
   aladin.on('zoomChanged', (f) => {
     fov = Array.isArray(f) ? f[0] : f;
-    refresh('ngc');
+    for (const id of ZOOMED) refresh(id);
   });
 
   return async function show(id, on) {
