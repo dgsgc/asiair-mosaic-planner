@@ -4,7 +4,7 @@ import {
   sequenceSeconds, formatDuration, formatRa, formatDec, parseRa, parseDec,
   asiairToPa, paToAsiair, senderFile, orderPanels, PANEL_ORDERS, rigPlanUrl,
 } from './mosaic.js';
-import { LAYERS, skyLayers } from './layers.js';
+import { LAYERS, skyLayers, upgradeLayers } from './layers.js';
 
 // ---- cameras -------------------------------------------------------------
 // Sensor sizes for common cameras. "Custom" leaves the fields as typed.
@@ -67,6 +67,7 @@ function upgrade(s) {
     // every angle is stored the way the ASIAIR shows it.
     if ((s.version || 1) < 2 && !t.useRigAngle) t.pa = paToAsiair(t.pa || 0);
   }
+  if (s.layers) s.layers = upgradeLayers(s.layers);
   s.version = 2;
   return s;
 }
@@ -328,14 +329,13 @@ function draw() {
 // Grid, constellations and Messier objects, switched on and off with the
 // chips under the header. Which ones are on is kept with the rest.
 let showLayer = null;
-const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier', ngc: 'NGC/IC', nebulae: 'Nebulae', dark: 'Dark' };
 
 function applyLayer(id, on) {
   if (!showLayer) return;
   const err = $('#layer-error');
   showLayer(id, on).then(() => { err.hidden = true; }).catch(() => {
     err.hidden = false;
-    err.textContent = `Couldn’t load the ${LAYER_SHORT[id]} overlay just now. Try again in a moment.`;
+    err.textContent = `Couldn’t load the ${LAYERS.find((l) => l.id === id)?.short ?? id} overlay just now. Try again in a moment.`;
     state.layers[id] = false;
     save();
     renderLayerChips();
@@ -343,18 +343,22 @@ function applyLayer(id, on) {
 }
 
 function renderLayerChips() {
-  const box = $('#layer-chips');
-  box.replaceChildren(...LAYERS.map((l) => {
+  renderChipGroup($('#layer-chips'), 'sky');
+  renderChipGroup($('#object-chips'), 'objects');
+}
+
+function renderChipGroup(box, group) {
+  box.replaceChildren(...LAYERS.filter((l) => l.group === group).map((l) => {
     const on = !!state.layers?.[l.id];
     return el('button', {
-      type: 'button', class: `chip${on ? ' on' : ''}`, 'aria-pressed': String(on), title: l.label,
+      type: 'button', class: `chip${on ? ' on' : ''}`, 'aria-pressed': String(on), title: l.zoomed ? `${l.label}. Shown when zoomed in to about 20° or closer.` : l.label, style: `--chip:${l.colour}`,
       onclick: () => {
         state.layers = { ...(state.layers || {}), [l.id]: !on };
         save();
         renderLayerChips();
         applyLayer(l.id, !on);
       },
-    }, LAYER_SHORT[l.id]);
+    }, l.short);
   }));
 }
 

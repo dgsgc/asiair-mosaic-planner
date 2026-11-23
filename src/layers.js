@@ -1,39 +1,54 @@
 // Extra things to show on the sky: a coordinate grid, constellation lines,
-// borders and names, and Messier objects. The constellation and Messier data
-// and NGC/IC data come from d3-celestial (BSD-3-Clause), loaded from jsDelivr the first time
-// each one is switched on, so they don't depend on the CDS servers.
+// borders and names, and one layer per object catalogue. Constellations,
+// Messier, NGC, IC, Cederblad, RCW, van den Bergh and supernova remnant data
+// come from d3-celestial (BSD-3-Clause) on jsDelivr. The complete Sharpless,
+// LBN, LDN and Barnard catalogues ship with the planner (data/nebulae.json,
+// made by tools/build_catalogues.py from VizieR), because d3-celestial's list
+// misses many of them. Each is loaded the first time it's switched on, and
+// none depends on the CDS servers.
 
 const DATA = 'https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/';
 
-export const LAYERS = [
-  { id: 'grid', label: 'Coordinate grid' },
-  { id: 'lines', label: 'Constellation lines' },
-  { id: 'borders', label: 'Constellation borders' },
-  { id: 'names', label: 'Constellation names' },
-  { id: 'messier', label: 'Messier objects' },
-  { id: 'ngc', label: 'NGC and IC objects (zoom in to about 20° to see them)' },
-  { id: 'nebulae', label: 'Bright nebulae: Sharpless (Sh2), LBN, Cederblad, RCW, van den Bergh, supernova remnants (zoom in to about 20°)' },
-  { id: 'dark', label: 'Dark nebulae: LDN and Barnard (zoom in to about 20°)' },
-];
-
 // Deep-sky catalogues are too many to show over a wide view.
 export const NGC_MAX_FOV = 20;
-const ZOOMED = new Set(['ngc', 'nebulae', 'dark']);
 
-// Which catalogue prefixes (as in "RCW 58") each deep-sky layer takes from
-// d3-celestial's list.
-const DSO_PREFIXES = {
-  ngc: ['NGC', 'IC'],
-  nebulae: ['Ced', 'RCW', 'VdB', 'SNR'],
-  dark: [],
-};
-// The complete Sharpless, LBN, LDN and Barnard catalogues ship with the
-// planner (data/nebulae.json, made by tools/build_catalogues.py from VizieR),
-// because d3-celestial's list misses many of them.
-const OWN = {
-  nebulae: [['sh2', (n) => `Sh2-${n}`], ['lbn', (n) => `LBN ${n}`]],
-  dark: [['ldn', (n) => `LDN ${n}`], ['b', (n) => `B ${n}`]],
-};
+// group: 'sky' (drawn lines and names) or 'objects' (catalogues).
+// d3: the catalogue prefix in d3-celestial's list ("RCW 58").
+// own: the key in data/nebulae.json, with how to write its names.
+export const LAYERS = [
+  { id: 'grid', short: 'Grid', label: 'Coordinate grid', group: 'sky', colour: '#8fb3ff' },
+  { id: 'lines', short: 'Lines', label: 'Constellation lines', group: 'sky', colour: '#7fc8ff' },
+  { id: 'borders', short: 'Borders', label: 'Constellation borders', group: 'sky', colour: '#d8a657' },
+  { id: 'names', short: 'Names', label: 'Constellation names', group: 'sky', colour: '#a9c7e8' },
+  { id: 'messier', short: 'Messier', label: 'Messier objects (110)', group: 'objects', colour: '#ff9f6b' },
+  { id: 'ngc', short: 'NGC', label: 'NGC objects to magnitude 14', group: 'objects', colour: '#c79bff', d3: 'NGC', zoomed: true },
+  { id: 'ic', short: 'IC', label: 'IC objects to magnitude 14', group: 'objects', colour: '#a8b4ff', d3: 'IC', zoomed: true },
+  { id: 'sh2', short: 'Sh2', label: 'Sharpless HII regions (313)', group: 'objects', colour: '#ff6b8a', own: 'sh2', name: (n) => `Sh2-${n}`, zoomed: true },
+  { id: 'lbn', short: 'LBN', label: 'Lynds bright nebulae (1,125)', group: 'objects', colour: '#ff9ec0', own: 'lbn', name: (n) => `LBN ${n}`, zoomed: true },
+  { id: 'ldn', short: 'LDN', label: 'Lynds dark nebulae (1,791)', group: 'objects', colour: '#b8c0cc', own: 'ldn', name: (n) => `LDN ${n}`, zoomed: true, shape: 'square' },
+  { id: 'barnard', short: 'Barnard', label: 'Barnard dark nebulae (349)', group: 'objects', colour: '#d9dee6', own: 'b', name: (n) => `B ${n}`, zoomed: true, shape: 'square' },
+  { id: 'ced', short: 'Ced', label: 'Cederblad bright nebulae', group: 'objects', colour: '#ffb27a', d3: 'Ced', zoomed: true },
+  { id: 'rcw', short: 'RCW', label: 'RCW HII regions (southern sky)', group: 'objects', colour: '#ff8f6b', d3: 'RCW', zoomed: true },
+  { id: 'vdb', short: 'vdB', label: 'van den Bergh reflection nebulae', group: 'objects', colour: '#7fb8ff', d3: 'VdB', zoomed: true },
+  { id: 'snr', short: 'SNR', label: 'Supernova remnants', group: 'objects', colour: '#6fe0c8', d3: 'SNR', zoomed: true },
+];
+const byId = new Map(LAYERS.map((l) => [l.id, l]));
+const COLOURS = Object.fromEntries(LAYERS.map((l) => [l.id, l.colour]));
+
+/** Older saved choices had grouped layers; turn them into the catalogue ones. */
+export function upgradeLayers(layers = {}) {
+  const out = { ...layers };
+  const groups = { ngc: ['ngc', 'ic'], nebulae: ['sh2', 'lbn', 'ced', 'rcw', 'vdb', 'snr'], dark: ['ldn', 'barnard'] };
+  if (out.nebulae !== undefined || out.dark !== undefined || (out.ngc && out.ic === undefined)) {
+    for (const [old, ids] of Object.entries(groups)) {
+      if (out[old]) for (const id of ids) out[id] = true;
+    }
+    delete out.nebulae;
+    delete out.dark;
+  }
+  return out;
+}
+
 let ownData = null;
 function loadOwn() {
   ownData ??= fetch(new URL('../data/nebulae.json', import.meta.url)).then((r) => {
@@ -42,18 +57,6 @@ function loadOwn() {
   }).catch((e) => { ownData = null; throw e; });
   return ownData;
 }
-const DSO_NAMES = { ngc: 'NGC and IC', nebulae: 'Bright nebulae', dark: 'Dark nebulae' };
-
-const COLOURS = {
-  grid: '#8fb3ff',
-  lines: '#7fc8ff',
-  borders: '#d8a657',
-  names: '#a9c7e8',
-  messier: '#ff9f6b',
-  ngc: '#c79bff',
-  nebulae: '#ff7aa8',
-  dark: '#b8c0cc',
-};
 
 const rad = Math.PI / 180;
 // d3-celestial gives RA from −180° to 180°.
@@ -155,22 +158,23 @@ export function skyLayers(A, aladin) {
       }));
       return cat;
     }
-    if (DSO_PREFIXES[id]) {
-      // d3-celestial's deep-sky list down to magnitude 14, plus the planner's
-      // own nebula catalogues; one layer per group.
-      const [data, own] = await Promise.all([load('dsos.14.json'), OWN[id] ? loadOwn() : null]);
-      const keep = new Set(DSO_PREFIXES[id]);
-      const cat = A.catalog({ name: DSO_NAMES[id], shape: id === 'dark' ? 'square' : 'circle', sourceSize: 7, color: COLOURS[id], displayLabel: true, labelColumn: 'name', labelColor: COLOURS[id], labelFont: '11px sans-serif' });
+    const layer = byId.get(id);
+    if (layer?.d3 || layer?.own) {
+      const cat = A.catalog({ name: layer.label, shape: layer.shape || 'circle', sourceSize: 7, color: layer.colour, displayLabel: true, labelColumn: 'name', labelColor: layer.colour, labelFont: '11px sans-serif' });
       aladin.addCatalog(cat);
-      cat.addSources(data.features
-        .filter((f) => keep.has(String(f.properties.desig).split(' ')[0]))
-        .map((f) => {
-          const [ra, dec] = f.geometry.coordinates;
-          const p = f.properties;
-          return A.source(normRa(ra), dec, { name: p.desig, type: p.type || '', mag: p.mag || '' });
-        }));
-      for (const [key, label] of OWN[id] ?? []) {
-        cat.addSources((own[key] ?? []).map(([n, ra, dec, size]) => A.source(ra, dec, { name: label(n), size: size ?? '' })));
+      if (layer.d3) {
+        // d3-celestial's deep-sky list down to magnitude 14.
+        const data = await load('dsos.14.json');
+        cat.addSources(data.features
+          .filter((f) => String(f.properties.desig).split(' ')[0] === layer.d3)
+          .map((f) => {
+            const [ra, dec] = f.geometry.coordinates;
+            const p = f.properties;
+            return A.source(normRa(ra), dec, { name: p.desig, type: p.type || '', mag: p.mag || '' });
+          }));
+      } else {
+        const own = await loadOwn();
+        cat.addSources((own[layer.own] ?? []).map(([n, ra, dec, size]) => A.source(ra, dec, { name: layer.name(n), size: size ?? '' })));
       }
       return cat;
     }
@@ -180,7 +184,7 @@ export function skyLayers(A, aladin) {
   // Layers that should only show when zoomed in.
   const wanted = new Map();
   let fov = aladin.getFov()[0];
-  const visible = (id) => wanted.get(id) && (!ZOOMED.has(id) || fov <= NGC_MAX_FOV);
+  const visible = (id) => wanted.get(id) && (!byId.get(id)?.zoomed || fov <= NGC_MAX_FOV);
   async function refresh(id) {
     if (!made.has(id)) return;
     const layer = await made.get(id).catch(() => null);
@@ -188,7 +192,7 @@ export function skyLayers(A, aladin) {
   }
   aladin.on('zoomChanged', (f) => {
     fov = Array.isArray(f) ? f[0] : f;
-    for (const id of ZOOMED) refresh(id);
+    for (const l of LAYERS) if (l.zoomed) refresh(l.id);
   });
 
   return async function show(id, on) {
