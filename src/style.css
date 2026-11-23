@@ -61,8 +61,15 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .list li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
 .list li:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .list li.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.list li.editing { outline: 1px dashed var(--muted); }
-.list .rig-edit { margin-left: 4px; padding: 2px 6px; }
+/* Rigs: the one in use is filled with its own colour. */
+.list li.rig { border-left: 3px solid transparent; }
+.list li.rig.in-use { border: 1px solid var(--rig); border-left: 3px solid var(--rig); background: color-mix(in srgb, var(--rig) 22%, transparent); }
+.list li.rig.in-use .name { font-weight: 650; }
+.list li.rig.in-use .meta { color: var(--text); }
+.list li.rig.editing .rig-settings { color: var(--accent); opacity: 1; }
+.rig-settings { flex: none; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; margin-left: 2px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); opacity: 0.55; cursor: pointer; }
+.list li:hover .rig-settings, .rig-settings:focus-visible { opacity: 1; }
+.rig-settings:hover { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
 .list .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .list .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list .meta { color: var(--muted); font-size: 12px; white-space: nowrap; }

@@ -343,6 +343,8 @@ function useRig(id) {
   changed();
 }
 
+const COG_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
 function renderRigs() {
   const list = $('#rig-list');
   list.replaceChildren();
@@ -351,15 +353,18 @@ function renderRigs() {
   $('#rig-hint').hidden = state.rigs.length < 2;
   for (const r of state.rigs) {
     const f = rigFov(r);
-    const cls = [r.id === active?.id ? 'selected' : '', r.id === editingRigId ? 'editing' : ''].join(' ').trim();
-    list.append(el('li', { class: cls, title: `Use ${r.name}`, onclick: () => useRig(r.id) },
+    const inUse = r.id === active?.id;
+    const cls = ['rig', inUse ? 'in-use' : '', r.id === editingRigId ? 'editing' : ''].join(' ').trim();
+    const cog = el('button', {
+      type: 'button', class: 'rig-settings', title: `${r.name} settings`, 'aria-label': `${r.name} settings`,
+      onclick: (e) => { e.stopPropagation(); if (editingRigId === r.id) closeRigForm(); else openRigForm(r.id); renderRigs(); },
+    });
+    cog.innerHTML = COG_SVG;
+    list.append(el('li', { class: cls, style: `--rig:${r.color}`, title: inUse ? `Planning with ${r.name}` : `Plan with ${r.name}`, 'aria-current': inUse ? 'true' : 'false', onclick: () => useRig(r.id) },
       el('span', { class: 'dot', style: `background:${r.color}` }),
       el('span', { class: 'name' }, r.name),
       el('span', { class: 'meta' }, `${fmtDeg(f.width)} × ${fmtDeg(f.height)} · ${fmtAngle(rigAngle(r))}`),
-      el('button', {
-        type: 'button', class: 'small ghost rig-edit', title: `Edit ${r.name}`,
-        onclick: (e) => { e.stopPropagation(); openRigForm(r.id); },
-      }, 'Edit')));
+      cog));
   }
 }
 
