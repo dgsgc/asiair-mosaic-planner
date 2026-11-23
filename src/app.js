@@ -328,14 +328,14 @@ function draw() {
 // Grid, constellations and Messier objects, switched on and off with the
 // chips under the header. Which ones are on is kept with the rest.
 let showLayer = null;
-const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier' };
+const LAYER_SHORT = { grid: 'Grid', lines: 'Lines', borders: 'Borders', names: 'Names', messier: 'Messier', ngc: 'NGC/IC' };
 
 function applyLayer(id, on) {
   if (!showLayer) return;
   const err = $('#layer-error');
   showLayer(id, on).then(() => { err.hidden = true; }).catch(() => {
     err.hidden = false;
-    err.textContent = `Couldn’t load the ${LAYERS.find((l) => l.id === id).label.toLowerCase()} just now. Try again in a moment.`;
+    err.textContent = `Couldn’t load the ${LAYER_SHORT[id]} overlay just now. Try again in a moment.`;
     state.layers[id] = false;
     save();
     renderLayerChips();

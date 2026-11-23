@@ -1,6 +1,6 @@
 // Extra things to show on the sky: a coordinate grid, constellation lines,
 // borders and names, and Messier objects. The constellation and Messier data
-// come from d3-celestial (BSD-3-Clause), loaded from jsDelivr the first time
+// and NGC/IC data come from d3-celestial (BSD-3-Clause), loaded from jsDelivr the first time
 // each one is switched on, so they don't depend on the CDS servers.
 
 const DATA = 'https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/';
@@ -11,7 +11,11 @@ export const LAYERS = [
   { id: 'borders', label: 'Constellation borders' },
   { id: 'names', label: 'Constellation names' },
   { id: 'messier', label: 'Messier objects' },
+  { id: 'ngc', label: 'NGC and IC objects (zoom in to about 20° to see them)' },
 ];
+
+// NGC and IC objects are too many to show over a wide view.
+export const NGC_MAX_FOV = 20;
 
 const COLOURS = {
   grid: '#8fb3ff',
@@ -19,6 +23,7 @@ const COLOURS = {
   borders: '#d8a657',
   names: '#a9c7e8',
   messier: '#ff9f6b',
+  ngc: '#c79bff',
 };
 
 const rad = Math.PI / 180;
@@ -121,10 +126,39 @@ export function skyLayers(A, aladin) {
       }));
       return cat;
     }
+    if (id === 'ngc') {
+      // Objects down to magnitude 14; only the NGC and IC ones are kept.
+      const data = await load('dsos.14.json');
+      const cat = A.catalog({ name: 'NGC and IC', shape: 'circle', sourceSize: 7, color: COLOURS.ngc, displayLabel: true, labelColumn: 'name', labelColor: COLOURS.ngc, labelFont: '11px sans-serif' });
+      aladin.addCatalog(cat);
+      cat.addSources(data.features
+        .filter((f) => /^(NGC|IC) /.test(f.properties.desig))
+        .map((f) => {
+          const [ra, dec] = f.geometry.coordinates;
+          const p = f.properties;
+          return A.source(normRa(ra), dec, { name: p.desig, type: p.type || '', mag: p.mag || '' });
+        }));
+      return cat;
+    }
     return null;
   }
 
+  // Layers that should only show when zoomed in.
+  const wanted = new Map();
+  let fov = aladin.getFov()[0];
+  const visible = (id) => wanted.get(id) && (id !== 'ngc' || fov <= NGC_MAX_FOV);
+  async function refresh(id) {
+    if (!made.has(id)) return;
+    const layer = await made.get(id).catch(() => null);
+    if (layer) (visible(id) ? layer.show() : layer.hide());
+  }
+  aladin.on('zoomChanged', (f) => {
+    fov = Array.isArray(f) ? f[0] : f;
+    refresh('ngc');
+  });
+
   return async function show(id, on) {
+    wanted.set(id, on);
     if (id === 'grid') {
       aladin.setCooGrid({ enabled: on, color: COLOURS.grid, opacity: 0.45, labelSize: 12 });
       return;
@@ -140,6 +174,6 @@ export function skyLayers(A, aladin) {
       made.delete(id);
       throw e;
     }
-    if (layer) (on ? layer.show() : layer.hide());
+    if (layer) (visible(id) ? layer.show() : layer.hide());
   };
 }
