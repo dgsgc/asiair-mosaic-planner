@@ -320,16 +320,46 @@ function draw() {
 // ---- rigs ----------------------------------------------------------------
 let editingRigId = null;
 
+// The rig in use: the selected target's rig, or else the one picked last.
+// New targets get it, and picking a rig in the list gives it to the
+// selected target too.
+const activeRig = () => rigById(selected()?.rigId) || rigById(state.lastRigId) || state.rigs[0] || null;
+
+// Give a target another rig. Overlap and panel order follow the rig's usual
+// ones, unless they were changed by hand.
+function setTargetRig(t, rigId) {
+  t.rigId = rigId;
+  const sa = isSa(rigById(rigId));
+  if (sa && t.overlap === DEFAULT_OVERLAP) t.overlap = SA_OVERLAP;
+  if (!sa && t.overlap === SA_OVERLAP) t.overlap = DEFAULT_OVERLAP;
+  if (sa && t.order === 'rows') t.order = 'serpentine';
+  if (!sa && t.order === 'serpentine') t.order = 'rows';
+}
+
+function useRig(id) {
+  state.lastRigId = id;
+  const t = selected();
+  if (t && t.rigId !== id) setTargetRig(t, id);
+  changed();
+}
+
 function renderRigs() {
   const list = $('#rig-list');
   list.replaceChildren();
   if (!state.rigs.length) list.append(el('li', { class: 'empty' }, 'Add a rig to see its field of view.'));
+  const active = activeRig();
+  $('#rig-hint').hidden = state.rigs.length < 2;
   for (const r of state.rigs) {
     const f = rigFov(r);
-    list.append(el('li', { class: r.id === editingRigId ? 'selected' : '', onclick: () => openRigForm(r.id) },
+    const cls = [r.id === active?.id ? 'selected' : '', r.id === editingRigId ? 'editing' : ''].join(' ').trim();
+    list.append(el('li', { class: cls, title: `Use ${r.name}`, onclick: () => useRig(r.id) },
       el('span', { class: 'dot', style: `background:${r.color}` }),
       el('span', { class: 'name' }, r.name),
-      el('span', { class: 'meta' }, `${fmtDeg(f.width)} × ${fmtDeg(f.height)} · ${fmtAngle(rigAngle(r))}`)));
+      el('span', { class: 'meta' }, `${fmtDeg(f.width)} × ${fmtDeg(f.height)} · ${fmtAngle(rigAngle(r))}`),
+      el('button', {
+        type: 'button', class: 'small ghost rig-edit', title: `Edit ${r.name}`,
+        onclick: (e) => { e.stopPropagation(); openRigForm(r.id); },
+      }, 'Edit')));
   }
 }
 
@@ -457,7 +487,7 @@ function addTargetHere() {
 }
 
 function addTarget(name, ra, dec, { keepZoom = false } = {}) {
-  const rig = rigById(selected()?.rigId) || rigById(state.lastRigId) || state.rigs[0];
+  const rig = activeRig();
   if (!rig) { $('#search-status').textContent = 'Add a rig first.'; return; }
   // A new target copies the exposures of the one selected before, if any.
   const seqs = selected()?.seqs?.map((s) => ({ ...s })) ?? [newSeq()];
@@ -664,16 +694,7 @@ function setupTargetForm() {
     const f = form.elements;
     switch (e.target.name) {
       case 'name': t.name = f.name.value.trim() || 'Target'; break;
-      case 'rigId': {
-        t.rigId = f.rigId.value;
-        // Follow the rig's usual overlap, unless it was changed by hand.
-        const sa = isSa(rigById(t.rigId));
-        if (sa && t.overlap === DEFAULT_OVERLAP) t.overlap = SA_OVERLAP;
-        if (!sa && t.overlap === SA_OVERLAP) t.overlap = DEFAULT_OVERLAP;
-        if (sa && t.order === 'rows') t.order = 'serpentine';
-        if (!sa && t.order === 'serpentine') t.order = 'rows';
-        break;
-      }
+      case 'rigId': setTargetRig(t, f.rigId.value); break;
       case 'ra': { const v = parseRa(f.ra.value); if (Number.isFinite(v) && v >= 0 && v < 360) { t.ra = v; centreOn(t); } break; }
       case 'dec': { const v = parseDec(f.dec.value); if (Number.isFinite(v) && Math.abs(v) <= 90) { t.dec = v; centreOn(t); } break; }
       case 'locked': t.locked = f.locked.checked; if (!t.locked) centreOn(t); break;
