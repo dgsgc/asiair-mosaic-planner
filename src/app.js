@@ -396,6 +396,7 @@ function renderRigs() {
   if (!state.rigs.length) list.append(el('li', { class: 'empty' }, 'Add a rig to see its field of view.'));
   const active = activeRig();
   $('#rig-hint').hidden = state.rigs.length < 2;
+  showRigsFolded();
   for (const r of state.rigs) {
     const f = rigFov(r);
     const inUse = r.id === active?.id;
@@ -411,6 +412,28 @@ function renderRigs() {
       el('span', { class: 'meta' }, `${fmtDeg(f.width)} × ${fmtDeg(f.height)} · ${fmtAngle(rigAngle(r))}`),
       cog));
   }
+}
+
+// The rigs card can fold away to one line showing the rig in use.
+function showRigsFolded() {
+  const folded = !!state.rigsFolded;
+  const active = activeRig();
+  $('#rigs-card').classList.toggle('folded', folded);
+  $('#rigs-body').hidden = folded;
+  $('#add-rig').hidden = folded;
+  $('#rigs-toggle').setAttribute('aria-expanded', String(!folded));
+  const cur = $('#rigs-current');
+  cur.replaceChildren();
+  if (folded && active) cur.append(el('span', { class: 'dot', style: `background:${active.color}` }), active.name);
+}
+
+function setupRigsFold() {
+  $('#rigs-toggle').addEventListener('click', () => {
+    state.rigsFolded = !state.rigsFolded;
+    if (state.rigsFolded && editingRigId) closeRigForm();
+    showRigsFolded();
+    save();
+  });
 }
 
 function rigFormValues(form) {
@@ -495,6 +518,7 @@ function setupRigForm() {
     changed();
   });
   $('#add-rig').addEventListener('click', () => openRigForm(null));
+  setupRigsFold();
   $('#rig-cancel').addEventListener('click', closeRigForm);
   $('#rig-delete').addEventListener('click', () => {
     const used = state.targets.filter((t) => t.rigId === editingRigId).length;

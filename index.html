@@ -44,11 +44,12 @@
         <p id="layer-error" class="hint" hidden></p>
       </header>
 
-      <section class="card">
+      <section class="card" id="rigs-card">
         <div class="card-head">
-          <h2>Rigs</h2>
+          <h2><button type="button" id="rigs-toggle" class="fold" aria-expanded="true" aria-controls="rigs-body" title="Show or hide the rigs"><span class="caret" aria-hidden="true"></span>Rigs<span id="rigs-current" class="current"></span></button></h2>
           <button id="add-rig" class="small">Add rig</button>
         </div>
+        <div id="rigs-body" class="fold-body">
         <ul id="rig-list" class="list"></ul>
         <p class="hint" id="rig-hint">Click a rig to plan with it; new targets and the selected target use it. The cog opens its settings.</p>
         <form id="rig-form" class="form hidden" autocomplete="off">
@@ -76,6 +77,7 @@
             <button type="button" id="rig-delete" class="danger ghost">Delete</button>
           </div>
         </form>
+        </div>
       </section>
 
       <section class="card">
