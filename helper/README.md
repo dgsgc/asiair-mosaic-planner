@@ -2,7 +2,7 @@
 
 A small Mac app that puts complete plans from the [ASIAIR Mosaic Planner](../README.md) into the ASIAIR app for Mac: every mosaic panel as a target, with its exposure lines. Each planner target becomes its own ASIAIR plan. You can do it in daylight with the ASIAIR on a desk; nothing is ever started.
 
-It works the ASIAIR app the way you would, through macOS accessibility: it creates the plan, pastes the panels with the app's own Import, adds the exposure lines to the first panel, and lets the app apply them to all the panels. ZWO's app does the actual saving to the ASIAIR.
+It works the ASIAIR app the way you would, through macOS accessibility: it creates the plan, pastes the panels with the app's own Import, and adds the exposure lines to every panel (see [What it does](#what-it-does-and-doesnt-do)). ZWO's app does the actual saving to the ASIAIR.
 
 Unofficial. Not made or supported by ZWO.
 
@@ -11,14 +11,14 @@ Unofficial. Not made or supported by ZWO.
 ## What you need
 
 - A Mac with Apple silicon (M1 or later), macOS 13 or later. The ASIAIR app only runs on these.
-- The ASIAIR app for Mac, from the App Store, connected to your ASIAIR. Tested with ASIAIR app 3.0.0 and ASIAIR firmware 14.39 (a 2-panel plan with two exposure lines, sent to an ASIAIR Mini on 26 Nov 2026).
+- The ASIAIR app for Mac, from the App Store, connected to your ASIAIR. Tested with ASIAIR app 3.0.0 and ASIAIR firmware 14.39 (2-panel plans with exposure lines at gain 100 and gain 0, sent to an ASIAIR Mini on 26 Nov 2026, from Plan Sender and from the planner app).
 - A send file (`.asiairplan`) saved from the planner.
 
 ## Install
 
-1. Download `ASIAIR-Plan-Sender.zip` from the [latest release](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest), unzip it, and move **ASIAIR Plan Sender** to Applications.
+1. Download `ASIAIR-Plan-Sender.zip` from [its release](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.0), unzip it, and move **ASIAIR Plan Sender** to Applications.
 2. **First opening:** the app isn't signed with a paid Apple developer certificate, so macOS warns about it. Right-click (or Control-click) the app and choose **Open**, then **Open** again. On recent macOS versions you may instead need System Settings → Privacy & Security → **Open Anyway**. You only do this once.
-3. **Allow it to operate other apps:** the first time, Plan Sender shows a button to open the right settings page. In System Settings → Privacy & Security → **Accessibility**, turn on **ASIAIR Plan Sender**. macOS may ask again after you install a new version. If Plan Sender still asks while it is switched on, the setting belongs to an older copy: remove it with **−**, add the app again with **+** and switch it on.
+3. **Allow it to operate other apps:** the first time, Plan Sender shows a button to open the right settings page. In System Settings → Privacy & Security → **Accessibility**, turn on **ASIAIR Plan Sender**. Updates keep this permission. If Plan Sender ever asks while it is switched on there, the setting belongs to an older copy: remove it with **−**, add the app again with **+** and switch it on.
 
 Prefer to build it yourself? See [Building](#building) below.
 
