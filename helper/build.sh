@@ -11,6 +11,7 @@ mkdir -p build
 flags=(-O -target arm64-apple-macos13)
 core=(Sources/Core/*.swift)
 
+ui=(Sources/SenderUI/*.swift)
 swiftc $flags $core Sources/CLI/main.swift -o build/asiair-send
 echo "built build/asiair-send"
 
@@ -22,7 +23,7 @@ if (( ${#appsrc} )); then
   rm -rf "$work"; mkdir -p "$work"
   app="$work/ASIAIR Plan Sender.app"
   mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-  swiftc $flags -parse-as-library $core $appsrc -o "$app/Contents/MacOS/ASIAIR Plan Sender"
+  swiftc $flags -parse-as-library $core $ui $appsrc -o "$app/Contents/MacOS/ASIAIR Plan Sender"
   cp Resources/Info.plist "$app/Contents/Info.plist"
   [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$app/Contents/Resources/"
   xattr -cr "$app"
@@ -35,4 +36,27 @@ if (( ${#appsrc} )); then
   ditto "$app" "build/ASIAIR Plan Sender.app"
   cp "$work/ASIAIR-Plan-Sender.zip" build/
   echo "built build/ASIAIR Plan Sender.app and build/ASIAIR-Plan-Sender.zip"
+fi
+
+# The ASIAIR Mosaic Planner app: the planner page (index.html, src, data from
+# the folder above) bundled with the Plan Sender built in.
+plannersrc=(Sources/Planner/*.swift(N))
+if (( ${#plannersrc} )); then
+  work="${TMPDIR:-/tmp}/asiair-mosaic-planner-build"
+  rm -rf "$work"; mkdir -p "$work"
+  app="$work/ASIAIR Mosaic Planner.app"
+  mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/planner"
+  swiftc $flags -parse-as-library $core $ui $plannersrc -o "$app/Contents/MacOS/ASIAIR Mosaic Planner"
+  cp Resources/Planner-Info.plist "$app/Contents/Info.plist"
+  [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$app/Contents/Resources/"
+  cp ../index.html "$app/Contents/Resources/planner/"
+  cp -R ../src ../data "$app/Contents/Resources/planner/"
+  xattr -cr "$app"
+  codesign --force --deep --sign - "$app"
+  codesign --verify --deep "$app"
+  ditto -c -k --keepParent "$app" "$work/ASIAIR-Mosaic-Planner.zip"
+  rm -rf "build/ASIAIR Mosaic Planner.app"
+  ditto "$app" "build/ASIAIR Mosaic Planner.app"
+  cp "$work/ASIAIR-Mosaic-Planner.zip" build/
+  echo "built build/ASIAIR Mosaic Planner.app and build/ASIAIR-Mosaic-Planner.zip"
 fi

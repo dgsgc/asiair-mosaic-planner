@@ -2,7 +2,7 @@
 
 Plan single targets and mosaics for ZWO ASIAIR rigs on real sky images, during the day, then paste the panels into the ASIAIR app's plan.
 
-It's a single web page with no server of its own. Your rigs and targets stay in your browser. It never connects to an ASIAIR.
+It's a single web page with no server of its own, and also a Mac app with the ASIAIR sending built in. Your rigs and targets stay in your browser (or in the app). The page never connects to an ASIAIR.
 
 ## What it does
 
@@ -18,6 +18,11 @@ It's a single web page with no server of its own. Your rigs and targets stay in 
 - **Plan files:** save and open your rigs and targets as a JSON file, to move them to another computer.
 
 ## Using it
+
+**Mac app (Apple silicon):** **[download ASIAIR Mosaic Planner](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)**, unzip it and move it to Applications. It's the same planner, with the Plan Sender built in: **Send to ASIAIR** opens a panel that enters the plans into the ASIAIR app for Mac, and **Send to rig** reaches a Star Adventurer controller on your WiFi. Saving, opening and copying use normal Mac dialogs and the clipboard, and your rigs and targets are kept by the app.
+- **First opening:** the app isn't signed with a paid Apple developer certificate, so right-click it, choose **Open**, then **Open** again (or System Settings → Privacy & Security → **Open Anyway**).
+- **Accessibility:** to send to the ASIAIR it needs System Settings → Privacy & Security → **Accessibility**. After installing a new version, remove it there with **−** and add it again with **+**.
+- **Bringing your plans:** press **Save** in the browser planner, then **Open** that file in the app.
 
 **Online:** <https://dgsgc.github.io/asiair-mosaic-planner/> works in any modern browser, iPad included. Everything except **Send to rig** works there.
 
@@ -38,7 +43,7 @@ then go to <http://localhost:8077>. It can also be hosted as-is on GitHub Pages;
 
 The planner can't write to an ASIAIR itself (the ASIAIR only takes plans from ZWO's app). Two ways to get a plan in:
 
-- **ASIAIR Plan Sender** (Mac, Apple silicon): save a send file with "Send file: this target" or "Send file: all for <rig>", then open it in the [Plan Sender](helper/README.md) with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. **[Download Plan Sender](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)** (free; needs a Mac with Apple silicon and the ASIAIR app for Mac).
+- **ASIAIR Plan Sender** (Mac, Apple silicon): save a send file with "Send file: this target" or "Send file: all for <rig>", then open it in the [Plan Sender](helper/README.md) with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. In the **[Mac app](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)** this is one step: **Send to ASIAIR** opens the Send panel with the plans, no file needed (free; needs a Mac with Apple silicon and the ASIAIR app for Mac).
 - **By hand:** copy the panels, paste them with Import in the ASIAIR app's plan, and add the exposure lines in the app.
 
 ## Sending plans to a Star Adventurer controller

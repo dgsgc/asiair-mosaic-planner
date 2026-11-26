@@ -622,7 +622,7 @@ function renderEditor() {
   if (editorFor !== t.id) form.reset();
   editorFor = t.id;
   set('name', t.name);
-  set('rigId', t.rigId);
+  rigSel.value = t.rigId; // its options were just rebuilt, so always set it
   set('ra', formatRa(t.ra));
   set('dec', formatDec(t.dec));
   const pa = targetAngle(t);
@@ -654,7 +654,7 @@ function renderEditor() {
 
   $('#csv-text').value = textForTargets([t]);
   $('#copy-rig').textContent = `Copy all for ${rig.name}`;
-  $('#send-rig').textContent = `Send file: all for ${rig.name}`;
+  $('#send-rig').textContent = inApp ? `Send to ASIAIR: all for ${rig.name}` : `Send file: all for ${rig.name}`;
   $('#sa-send-rig').textContent = `Send all for ${rig.name}`;
   $('#send-sa').hidden = !isSa(rig);
   $('#send-asiair').hidden = isSa(rig);
@@ -929,8 +929,11 @@ function setupCsv() {
     box.value = text;
     let ok = false;
     try {
-      await navigator.clipboard.writeText(text);
-      ok = true;
+      if (inApp) ok = !!(await ask({ op: 'copy', text }));
+      else {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
     } catch {
       // Older or locked-down browsers: copy from the text box instead.
       $('#csv-box').open = true;
@@ -972,6 +975,21 @@ function setupCsv() {
       + (isSa(rig) ? '. Load it on the controller’s page.' : ' for the Plan Sender.')
       + (empty.length ? ` No exposures yet for: ${empty.join(', ')}.` : '');
   };
+  // In the Mac app: open its Send panel with the plans, no file.
+  const sendToAsiair = async (targets) => {
+    const file = buildSendFile(targets);
+    const empty = file.plans.filter((p) => !p.exposures.length).map((p) => p.name);
+    const title = targets.length > 1 ? `${file.plans.length} plans for ${rigById(targets[0].rigId)?.name || 'the rig'}` : targets[0].name;
+    try {
+      const r = await ask({ op: 'asiair', file: JSON.stringify(file), title });
+      status.textContent = r === 'ok'
+        ? `Opened ${file.plans.length} plan${file.plans.length > 1 ? 's' : ''} in the Send panel. Check them there and press Send to ASIAIR.`
+          + (empty.length ? ` No exposures yet for: ${empty.join(', ')}.` : '')
+        : r === 'busy' ? 'The Send panel is still sending. Wait for it to finish, then try again.' : `The Send panel couldn't take the plans: ${r}`;
+    } catch (e) {
+      status.textContent = `Couldn't open the Send panel: ${e.message || e}`;
+    }
+  };
   // Straight to a Star Adventurer controller: POST the same send file to its /plan.
   const saStatus = $('#sa-status');
   const sendToRig = async (targets) => {
@@ -982,14 +1000,29 @@ function setupCsv() {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 8000);
     try {
-      const res = await fetch(url, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(file), signal: ctl.signal,
-      });
+      let status;
       let reply = null;
-      try { reply = await res.json(); } catch { /* not JSON */ }
-      if (!res.ok || !reply || reply.ok === false) {
-        saStatus.textContent = `The controller refused the plan: ${reply?.error || `HTTP ${res.status}`}.`;
+      if (inApp) {
+        // The app posts it (a page can't reach the local network itself).
+        const r = await ask({ op: 'post', url, body: JSON.stringify(file) });
+        if (!r?.ok) {
+          saStatus.textContent = r?.timeout
+            ? `No answer from ${url} in 8 s. Is the controller on and on the same WiFi? Check the address in the rig’s settings, or use Save send file.`
+            : `Couldn’t reach ${url}: ${r?.error || 'no answer'}. Is the controller on and on the same WiFi? Check the address, or use Save send file.`;
+          return;
+        }
+        status = r.status;
+        try { reply = JSON.parse(r.text); } catch { /* not JSON */ }
+      } else {
+        const res = await fetch(url, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(file), signal: ctl.signal,
+        });
+        status = res.status;
+        try { reply = await res.json(); } catch { /* not JSON */ }
+      }
+      if (status < 200 || status >= 300 || !reply || reply.ok === false) {
+        saStatus.textContent = `The controller refused the plan: ${reply?.error || `HTTP ${status}`}.`;
         return;
       }
       const names = (reply.received || []).map((r) => (r.panels ? `${r.name} (${r.panels} panels)` : r.name || r)).join(', ') || `${file.plans.length} plan(s)`;
@@ -1020,11 +1053,11 @@ function setupCsv() {
   });
   $('#send-target').addEventListener('click', () => {
     const t = selected();
-    if (t) sendFile([t]);
+    if (t) (inApp ? sendToAsiair : sendFile)([t]);
   });
   $('#send-rig').addEventListener('click', () => {
     const t = selected();
-    if (t) sendFile(state.targets.filter((x) => x.rigId === t.rigId));
+    if (t) (inApp ? sendToAsiair : sendFile)(state.targets.filter((x) => x.rigId === t.rigId));
   });
   $('#download-text').addEventListener('click', () => {
     const t = selected();
@@ -1032,8 +1065,25 @@ function setupCsv() {
   });
 }
 
+// Inside the ASIAIR Mosaic Planner Mac app the page asks the app to save
+// files, copy text, send plans to the ASIAIR app and post to a controller.
+const host = window.webkit?.messageHandlers?.host;
+const inApp = !!host?.postMessage;
+const ask = (msg) => host.postMessage(msg);
+
+/** Swap in the app's own wording, and hide what only applies to the web page. */
+function setupAppWording() {
+  if (!inApp) return;
+  document.documentElement.classList.add('in-app');
+  for (const n of document.querySelectorAll('[data-app]')) n.textContent = n.dataset.app;
+}
+
 const safeName = (s) => s.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'plan';
 function download(name, text, type) {
+  if (inApp) {
+    ask({ op: 'save', name, text }).catch((e) => alert(`Couldn't save ${name}: ${e.message || e}`));
+    return;
+  }
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = el('a', { href: url, download: name });
   document.body.append(a);
@@ -1090,6 +1140,7 @@ function changed() {
   draw();
 }
 
+setupAppWording();
 setupRigForm();
 setupTargetForm();
 setupSeqs();

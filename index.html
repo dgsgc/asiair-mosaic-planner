@@ -158,7 +158,7 @@
         <div id="send-sa" class="send-ways" hidden>
           <div class="way">
             <h3>Straight to the Star Adventurer controller</h3>
-            <p class="hint">Sends the panels and the first Light line over your WiFi. It only stores the plan: nothing moves or shoots until you start it on the controller’s page. Works when the planner is opened from your computer (http://localhost) on the controller’s network.</p>
+            <p class="hint">Sends the panels and the first Light line over your WiFi. It only stores the plan: nothing moves or shoots until you start it on the controller’s page. <span class="web-only">Works when the planner is opened from your computer (http://localhost) on the controller’s network.</span></p>
             <div class="row">
               <button id="sa-send-target">Send this target</button>
               <button id="sa-send-rig" class="ghost">Send all for rig</button>
@@ -175,10 +175,10 @@
         </div>
         <div id="send-asiair" class="send-ways">
           <div class="way">
-            <h3>With the ASIAIR Plan Sender app</h3>
-            <p class="hint">Save a send file, then open it in the Sender with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. <a href="https://github.com/dgsgc/asiair-mosaic-planner/releases/latest" target="_blank" rel="noopener">Download Plan Sender</a> (free, Mac with Apple silicon).</p>
+            <h3 data-app="Straight to the ASIAIR app">With the ASIAIR Plan Sender app</h3>
+            <p class="hint" data-app="Opens the Send panel with the plans. Check them, then press Send to ASIAIR there with the ASIAIR app open and connected. Each target becomes its own ASIAIR plan, exposures included.">Save a send file, then open it in the Sender with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. Or <a href="https://github.com/dgsgc/asiair-mosaic-planner/releases/latest" target="_blank" rel="noopener">get the Mac app</a>, which sends straight from the planner (free, Mac with Apple silicon).</p>
             <div class="row">
-              <button id="send-target">Send file: this target</button>
+              <button id="send-target" data-app="Send to ASIAIR: this target">Send file: this target</button>
               <button id="send-rig" class="ghost">Send file: all for rig</button>
             </div>
           </div>
@@ -211,7 +211,7 @@
         </div>
       </section>
 
-      <p class="hint foot">Your rigs and targets stay in this browser. Sky images come from CDS HiPS surveys via Aladin Lite. Unofficial; not made by ZWO.</p>
+      <p class="hint foot"><span data-app="Your rigs and targets stay in this app.">Your rigs and targets stay in this browser.</span> Sky images come from CDS HiPS surveys via Aladin Lite. Unofficial; not made by ZWO.</p>
     </aside>
 
     <main class="sky">

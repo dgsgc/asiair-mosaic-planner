@@ -47,13 +47,16 @@ public struct PlanFile: Codable, Sendable {
     public var plans: [Plan]
 
     public static func load(_ url: URL) throws -> PlanFile {
-        let data = try Data(contentsOf: url)
+        try load(Data(contentsOf: url), name: url.lastPathComponent)
+    }
+
+    public static func load(_ data: Data, name: String) throws -> PlanFile {
         let f = try JSONDecoder().decode(PlanFile.self, from: data)
-        guard f.format == "asiair-plan-sender" else { throw AXError("\(url.lastPathComponent) isn't a Plan Sender file.") }
-        guard f.version == 1 else { throw AXError("\(url.lastPathComponent) was made by a newer planner (version \(f.version)).") }
+        guard f.format == "asiair-plan-sender" else { throw AXError("\(name) isn't a Plan Sender file.") }
+        guard f.version == 1 else { throw AXError("\(name) was made by a newer planner (version \(f.version)).") }
         for p in f.plans {
             guard !p.targets.isEmpty, p.importText.hasPrefix("Name,RA,DEC,Angle") else {
-                throw AXError("Plan \(p.name) in \(url.lastPathComponent) has no targets.")
+                throw AXError("Plan \(p.name) in \(name) has no targets.")
             }
             for e in p.exposures {
                 guard ["Light", "Dark", "Flat", "Bias"].contains(e.type), (1...4).contains(e.bin),

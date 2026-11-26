@@ -170,3 +170,4 @@ h3 .hint { font-weight: 400; margin-left: 4px; }
 
 a { color: var(--accent); }
 a:hover { text-decoration-thickness: 2px; }
+.in-app .web-only { display: none; }

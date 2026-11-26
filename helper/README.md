@@ -6,6 +6,8 @@ It works the ASIAIR app the way you would, through macOS accessibility: it creat
 
 Unofficial. Not made or supported by ZWO.
 
+**The easier way:** the [ASIAIR Mosaic Planner Mac app](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest) has Plan Sender built in. Its **Send to ASIAIR** button opens the same Send panel with the plans straight from the planner, no send file. This separate Plan Sender is for send files saved from the online planner.
+
 ## What you need
 
 - A Mac with Apple silicon (M1 or later), macOS 13 or later. The ASIAIR app only runs on these.
@@ -60,7 +62,7 @@ You need Apple's command line tools (`xcode-select --install`).
 ./build.sh
 ```
 
-This builds `build/ASIAIR Plan Sender.app` and a command-line version, `build/asiair-send`:
+This builds `build/ASIAIR Plan Sender.app`, `build/ASIAIR Mosaic Planner.app` (the planner page from the folder above, bundled with the Send panel; `Sources/Planner/`), zips of both for releases, and a command-line version, `build/asiair-send`:
 
 ```bash
 build/asiair-send check my-plans.asiairplan   # show what would be sent
@@ -70,6 +72,8 @@ build/asiair-send dump                        # list the ASIAIR app's controls (
 ```
 
 The command-line version needs the same Accessibility permission, given to the Terminal app you run it from.
+
+`"ASIAIR Mosaic Planner.app/Contents/MacOS/ASIAIR Mosaic Planner" --check [picture.png]` loads the planner, prints what works (sky view, storage, data files, name lookups) as JSON, saves a picture of the page and quits. Inside the app the page talks to the app through `window.webkit.messageHandlers.host` (save a file, copy, send to the ASIAIR, post to a controller); the same page in a browser works as before.
 
 ## How it finds things
 
