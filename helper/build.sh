@@ -62,7 +62,8 @@ if (( ${#plannersrc} )); then
   mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/planner"
   swiftc $flags -parse-as-library $core $ui $plannersrc -o "$app/Contents/MacOS/ASIAIR Mosaic Planner"
   cp Resources/Planner-Info.plist "$app/Contents/Info.plist"
-  [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$app/Contents/Resources/"
+  # Icons: drawn by tools/make_icon.swift (PlannerIcon without, AppIcon with the send badge).
+  [[ -f Resources/PlannerIcon.icns ]] && cp Resources/PlannerIcon.icns "$app/Contents/Resources/AppIcon.icns"
   cp ../index.html "$app/Contents/Resources/planner/"
   cp -R ../src ../data "$app/Contents/Resources/planner/"
   xattr -cr "$app"
