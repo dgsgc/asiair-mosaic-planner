@@ -18,6 +18,13 @@
             <label class="button ghost small" title="Open a saved plan file">Open<input id="import-plan" type="file" accept=".json,application/json" hidden></label>
           </div>
         </div>
+      </header>
+
+      <section class="card" id="view-card">
+        <div class="card-head">
+          <h2><button type="button" class="fold" data-fold="view" aria-expanded="true" aria-controls="view-body" title="Show or hide the sky settings"><span class="caret" aria-hidden="true"></span>Sky view<span class="current" data-fold-current="view"></span></button></h2>
+        </div>
+        <div id="view-body" class="fold-body settings">
         <label class="survey">Sky
           <select id="survey" aria-label="Sky survey">
             <option value="P/DSS2/color">DSS colour</option>
@@ -42,16 +49,17 @@
           <div class="chips" id="object-chips" role="group" aria-label="Object catalogues"></div>
         </div>
         <p id="layer-error" class="hint" hidden></p>
-      </header>
+        </div>
+      </section>
 
       <section class="card" id="rigs-card">
         <div class="card-head">
-          <h2><button type="button" id="rigs-toggle" class="fold" aria-expanded="true" aria-controls="rigs-body" title="Show or hide the rigs"><span class="caret" aria-hidden="true"></span>Rigs<span id="rigs-current" class="current"></span></button></h2>
+          <h2><button type="button" class="fold" data-fold="rigs" aria-expanded="true" aria-controls="rigs-body" title="Show or hide the rigs"><span class="caret" aria-hidden="true"></span>Rigs<span class="current" data-fold-current="rigs"></span></button></h2>
           <button id="add-rig" class="small">Add rig</button>
         </div>
         <div id="rigs-body" class="fold-body">
         <ul id="rig-list" class="list"></ul>
-        <p class="hint" id="rig-hint">Click a rig to plan with it; new targets and the selected target use it. The cog opens its settings.</p>
+        <p class="hint" id="rig-hint">Click a rig to plan with it: new targets and the selected one use it. The cog edits the rig.</p>
         <form id="rig-form" class="form hidden" autocomplete="off">
           <label class="s4">Name <input name="name" required maxlength="40"></label>
           <label class="s2">Colour <input name="color" type="color"></label>
@@ -89,7 +97,7 @@
           </div>
         </div>
         <form id="search-form" class="search" autocomplete="off">
-          <input id="search" list="name-suggestions" placeholder="M31, Sh2-155, Soul Nebula… or RA, Dec" aria-label="Find a target" enterkeyhint="search" autocapitalize="off" spellcheck="false">
+          <input id="search" list="name-suggestions" placeholder="M31, Soul Nebula, Sh2-155 or RA, Dec" aria-label="Find a target" enterkeyhint="search" autocapitalize="off" spellcheck="false">
           <datalist id="name-suggestions"></datalist>
           <button type="submit">Add</button>
         </form>
@@ -107,7 +115,14 @@
           <label class="s2">Rig <select name="rigId"></select></label>
           <label class="s3">RA <input name="ra" placeholder="05 35 17.3"></label>
           <label class="s3">Dec <input name="dec" placeholder="−05 23 28"></label>
-          <label class="s6 check"><input type="checkbox" name="locked"> <span>Lock position <span class="hint">· otherwise drag the sky to move it</span></span></label>
+          <label class="s6 check"><input type="checkbox" name="locked"> <span>Lock position <span class="hint">· otherwise dragging the sky moves the target</span></span></label>
+
+          <h3 class="form-section">Camera angle</h3>
+          <label class="s6 check"><input type="checkbox" name="useRigAngle"> <span>Use the rig’s angle <span id="rig-angle"></span></span></label>
+          <label class="s6"><span class="hint">Degrees, as the ASIAIR shows it after a plate solve</span> <span class="pair"><input name="pa" type="range" min="0" max="360" step="0.5" aria-label="Camera angle slider"><input name="paNum" type="number" min="0" max="360" step="0.1" aria-label="Camera angle"></span></label>
+          <p id="angle-note" class="hint s6 warn" hidden></p>
+
+          <h3 class="form-section">Mosaic</h3>
           <label class="s2">Columns <input name="cols" type="number" min="1" max="12" step="1"></label>
           <label class="s2">Rows <input name="rows" type="number" min="1" max="12" step="1"></label>
           <label class="s2">Overlap % <input name="overlapNum" type="number" min="0" max="50" step="1"></label>
@@ -115,12 +130,9 @@
             <option value="rows">Row by row</option>
             <option value="serpentine">Back and forth in DEC</option>
           </select></label>
-          <label class="s6 check"><input type="checkbox" name="useRigAngle"> <span>Use the rig’s camera angle <span id="rig-angle"></span></span></label>
-          <label class="s6">Camera angle (° as the ASIAIR shows it) <span class="pair"><input name="pa" type="range" min="0" max="360" step="0.5" aria-label="Angle slider"><input name="paNum" type="number" min="0" max="360" step="0.1" aria-label="Angle"></span></label>
-          <p id="angle-note" class="hint s6 warn" hidden></p>
         </form>
         <p id="target-summary" class="summary"></p>
-        <details>
+        <details class="more">
           <summary>Panel centres</summary>
           <div class="table-wrap">
             <table class="panels">
@@ -130,8 +142,8 @@
           </div>
         </details>
 
-        <div class="sub-head">
-          <h3>Exposures <span class="hint">every panel</span></h3>
+        <div class="sub-head form-section">
+          <h3>Exposures <span class="hint">for every panel</span></h3>
           <button id="add-seq" class="small ghost">Add line</button>
         </div>
         <div class="seq seq-labels" aria-hidden="true"><span>Type</span><span>Exp (s)</span><span>Gain</span><span>Count</span><span>Bin</span><span></span></div>
@@ -139,39 +151,53 @@
         <p id="seq-summary" class="summary"></p>
         <p id="seq-note" class="hint" hidden></p>
 
-        <div id="send" class="send" hidden>
-          <div id="send-sa" hidden>
-            <div class="sub-head"><h3>To the Star Adventurer controller</h3></div>
-            <p class="hint">Sends the panels and the first Light exposure line straight to the controller over your WiFi. It only stores the plan; nothing moves or shoots until you start it on the controller’s page. Works when this planner is opened from your computer (http://localhost) on the same network as the controller.</p>
+      </section>
+
+      <section class="card send" id="send" hidden>
+        <div class="card-head"><h2>Send</h2></div>
+        <div id="send-sa" class="send-ways" hidden>
+          <div class="way">
+            <h3>Straight to the Star Adventurer controller</h3>
+            <p class="hint">Sends the panels and the first Light line over your WiFi. It only stores the plan: nothing moves or shoots until you start it on the controller’s page. Works when the planner is opened from your computer (http://localhost) on the controller’s network.</p>
             <div class="row">
-              <button id="sa-send-target">Send to rig: this target</button>
-              <button id="sa-send-rig" class="ghost">Send to rig: all for rig</button>
+              <button id="sa-send-target">Send this target</button>
+              <button id="sa-send-rig" class="ghost">Send all for rig</button>
             </div>
-            <p class="hint">Or save a send file and load it on the controller’s page.</p>
+          </div>
+          <div class="way">
+            <h3>With a send file</h3>
+            <p class="hint">Save a file and load it on the controller’s page.</p>
             <div class="row">
-              <button id="sa-file-target" class="ghost small">Save send file</button>
+              <button id="sa-file-target" class="ghost">Save send file</button>
             </div>
-            <p id="sa-status" class="hint" role="status"></p>
           </div>
-          <div id="send-asiair">
-          <div class="sub-head"><h3>To the ASIAIR</h3></div>
-          <p class="hint">With the <strong>ASIAIR Plan Sender</strong> app: save a send file, then open it in the Sender with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included.</p>
-          <div class="row">
-            <button id="send-target">Send file: this target</button>
-            <button id="send-rig" class="ghost">Send file: all for rig</button>
+          <p id="sa-status" class="hint" role="status"></p>
+        </div>
+        <div id="send-asiair" class="send-ways">
+          <div class="way">
+            <h3>With the ASIAIR Plan Sender app</h3>
+            <p class="hint">Save a send file, then open it in the Sender with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included.</p>
+            <div class="row">
+              <button id="send-target">Send file: this target</button>
+              <button id="send-rig" class="ghost">Send file: all for rig</button>
+            </div>
           </div>
-          <p class="hint">Or by hand: copy the panels and paste them with Import in the ASIAIR app’s plan.</p>
-          <div class="row">
-            <button id="copy-target" class="ghost small">Copy this target</button>
-            <button id="copy-rig" class="ghost small">Copy all for rig</button>
-            <button id="download-text" class="ghost small" title="Download as a text file">Download</button>
+          <div class="way">
+            <h3>By hand in the ASIAIR app</h3>
+            <p class="hint">Copy the panels, then paste them with Import in the ASIAIR app’s plan.</p>
+            <div class="row">
+              <button id="copy-target" class="ghost small">Copy this target</button>
+              <button id="copy-rig" class="ghost small">Copy all for rig</button>
+              <button id="download-text" class="ghost small" title="Download as a text file">Download</button>
+            </div>
+            <p id="copy-status" class="hint" role="status"></p>
           </div>
-          <p id="copy-status" class="hint" role="status"></p>
-          <details id="csv-box">
+          <div class="mores">
+          <details id="csv-box" class="more">
             <summary>Show the text</summary>
             <textarea id="csv-text" readonly rows="6" spellcheck="false" aria-label="Plan text for the ASIAIR app"></textarea>
           </details>
-          <details class="howto">
+          <details class="more howto">
             <summary>How to load it into the ASIAIR app</summary>
             <ol>
               <li>In the ASIAIR app, open Plan and make or open the plan you want. Pasting adds targets to the open plan.</li>

@@ -397,7 +397,7 @@ function renderRigs() {
   if (!state.rigs.length) list.append(el('li', { class: 'empty' }, 'Add a rig to see its field of view.'));
   const active = activeRig();
   $('#rig-hint').hidden = state.rigs.length < 2;
-  showRigsFolded();
+  showFold('rigs');
   for (const r of state.rigs) {
     const f = rigFov(r);
     const inUse = r.id === active?.id;
@@ -415,26 +415,40 @@ function renderRigs() {
   }
 }
 
-// The rigs card can fold away to one line showing the rig in use.
-function showRigsFolded() {
-  const folded = !!state.rigsFolded;
-  const active = activeRig();
-  $('#rigs-card').classList.toggle('folded', folded);
-  $('#rigs-body').hidden = folded;
-  $('#add-rig').hidden = folded;
-  $('#rigs-toggle').setAttribute('aria-expanded', String(!folded));
-  const cur = $('#rigs-current');
-  cur.replaceChildren();
-  if (folded && active) cur.append(el('span', { class: 'dot', style: `background:${active.color}` }), active.name);
+// The rigs and sky view cards fold away to one line, which then shows the
+// rig in use or the sky survey. Remembered with the plan.
+const FOLDS = {
+  rigs: {
+    card: '#rigs-card', key: 'rigsFolded', also: ['#add-rig'],
+    current: () => { const r = activeRig(); return r ? [el('span', { class: 'dot', style: `background:${r.color}` }), r.name] : []; },
+  },
+  view: {
+    card: '#view-card', key: 'viewFolded', also: [],
+    current: () => [$('#survey').selectedOptions[0]?.textContent.replace(/\s*\(.*\)$/, '') ?? ''],
+  },
+};
+
+function showFold(id) {
+  const f = FOLDS[id];
+  const folded = !!state[f.key];
+  const card = $(f.card);
+  card.classList.toggle('folded', folded);
+  card.querySelector('.fold-body').hidden = folded;
+  for (const sel of f.also) $(sel).hidden = folded;
+  card.querySelector(`[data-fold="${id}"]`).setAttribute('aria-expanded', String(!folded));
+  card.querySelector(`[data-fold-current="${id}"]`).replaceChildren(...(folded ? f.current() : []));
 }
 
-function setupRigsFold() {
-  $('#rigs-toggle').addEventListener('click', () => {
-    state.rigsFolded = !state.rigsFolded;
-    if (state.rigsFolded && editingRigId) closeRigForm();
-    showRigsFolded();
-    save();
-  });
+function setupFolds() {
+  for (const id of Object.keys(FOLDS)) {
+    document.querySelector(`[data-fold="${id}"]`).addEventListener('click', () => {
+      state[FOLDS[id].key] = !state[FOLDS[id].key];
+      if (id === 'rigs' && state.rigsFolded && editingRigId) closeRigForm();
+      showFold(id);
+      save();
+    });
+    showFold(id);
+  }
 }
 
 function rigFormValues(form) {
@@ -519,7 +533,7 @@ function setupRigForm() {
     changed();
   });
   $('#add-rig').addEventListener('click', () => openRigForm(null));
-  setupRigsFold();
+
   $('#rig-cancel').addEventListener('click', closeRigForm);
   $('#rig-delete').addEventListener('click', () => {
     const used = state.targets.filter((t) => t.rigId === editingRigId).length;
@@ -641,7 +655,7 @@ function renderEditor() {
   $('#csv-text').value = textForTargets([t]);
   $('#copy-rig').textContent = `Copy all for ${rig.name}`;
   $('#send-rig').textContent = `Send file: all for ${rig.name}`;
-  $('#sa-send-rig').textContent = `Send to rig: all for ${rig.name}`;
+  $('#sa-send-rig').textContent = `Send all for ${rig.name}`;
   $('#send-sa').hidden = !isSa(rig);
   $('#send-asiair').hidden = isSa(rig);
   const rows = $('#panel-rows');
@@ -1063,11 +1077,13 @@ function setupPlanFiles() {
     save();
     showSurvey(survey.value);
   });
+  setupFolds();
 }
 
 // ---- wiring --------------------------------------------------------------
 function changed() {
   save();
+  if ($('#view-card')) showFold('view');
   renderRigs();
   renderTargets();
   renderEditor();
