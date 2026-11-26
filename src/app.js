@@ -5,6 +5,7 @@ import {
   asiairToPa, paToAsiair, senderFile, orderPanels, PANEL_ORDERS, rigPlanUrl,
 } from './mosaic.js';
 import { LAYERS, skyLayers, upgradeLayers } from './layers.js';
+import { nameIndex, findLocal, sesameQueries } from './search.js';
 
 // ---- cameras -------------------------------------------------------------
 // Sensor sizes for common cameras. "Custom" leaves the fields as typed.
@@ -805,25 +806,77 @@ function setupTargetForm() {
     const q = $('#search').value.trim();
     const status = $('#search-status');
     if (!q) return;
-    // Coordinates typed straight in: "RA, Dec".
-    const m = q.match(/^(.+?)[,;]\s*(.+)$/);
-    if (m && Number.isFinite(parseRa(m[1])) && Number.isFinite(parseDec(m[2]))) {
-      addTarget('Custom target', parseRa(m[1]), parseDec(m[2]));
+    // Coordinates typed straight in.
+    const c = typedCoords(q);
+    if (c) {
+      addTarget('Custom target', c.ra, c.dec);
       status.textContent = '';
       $('#search').value = '';
       return;
     }
+    const button = $('#search-form button[type=submit]');
+    button.disabled = true;
     status.textContent = `Looking up ${q}…`;
-    resolveName(q).then((pos) => {
-      if (!pos) {
-        status.textContent = `Couldn't find “${q}”. Try a catalogue name (NGC 7000) or type “RA, Dec”.`;
+    findTarget(q).then((found) => {
+      if (!found) {
+        status.textContent = `Couldn't find “${q}”. Try a catalogue name (NGC 7000, Sh2-155), a common name from the list, or type “RA, Dec”.`;
         return;
       }
-      status.textContent = '';
+      status.textContent = found.desig && found.desig !== found.name ? `Found ${found.name} (${found.desig}).` : '';
       $('#search').value = '';
-      addTarget(q, pos.ra, pos.dec);
-    });
+      addTarget(found.name, found.ra, found.dec);
+    }).finally(() => { button.disabled = false; });
   });
+  fillNameSuggestions();
+}
+
+/**
+ * RA and Dec typed in: "05 35 17, -05 23 28", "83.82 -5.39",
+ * "05h35m17s +22d00m52s", or six numbers "05 35 17 22 00 52".
+ */
+function typedCoords(q) {
+  const ok = (ra, dec) => {
+    const r = parseRa(ra);
+    const d = parseDec(dec);
+    return Number.isFinite(r) && Number.isFinite(d) && r >= 0 && r < 360 && Math.abs(d) <= 90 ? { ra: r, dec: d } : null;
+  };
+  if (/[a-z]/i.test(q.replace(/hr?|[dms]/gi, ''))) return null;
+  let m = q.match(/^(.+?)[,;]\s*(.+)$/);
+  if (m) return ok(m[1], m[2]);
+  m = q.match(/^(.+?)\s*([+\-−]\s*\d.*)$/);
+  if (m) return ok(m[1], m[2]);
+  const parts = q.split(/\s+/);
+  if (parts.length === 6) return ok(parts.slice(0, 3).join(' '), parts.slice(3).join(' '));
+  if (parts.length === 2) return ok(parts[0], parts[1]);
+  return null;
+}
+
+// The planner's own name lists, loaded once.
+let ownNames = null;
+function loadNames() {
+  const get = (file) => fetch(new URL(`../data/${file}`, import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  ownNames ??= Promise.all([get('names.json'), get('nebulae.json')]).then(([names, own]) => ({
+    list: names?.names ?? [], index: nameIndex(names?.names ?? []), own,
+  }));
+  return ownNames;
+}
+
+async function findTarget(q) {
+  const lists = await loadNames();
+  const local = findLocal(q, lists.index, lists.own);
+  if (local) return local;
+  for (const { ask, name } of sesameQueries(q)) {
+    const pos = await resolveName(ask);
+    if (pos) return { name, ...pos };
+  }
+  return null;
+}
+
+/** Common names as suggestions while typing. */
+async function fillNameSuggestions() {
+  const { list } = await loadNames();
+  const box = $('#name-suggestions');
+  box.replaceChildren(...list.map(([name, , , desig]) => el('option', { value: name }, desig || '')));
 }
 
 // Object names go to the Sesame name service (SIMBAD, NED, VizieR). It runs

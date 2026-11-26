@@ -89,7 +89,8 @@
           </div>
         </div>
         <form id="search-form" class="search" autocomplete="off">
-          <input id="search" placeholder="M31, NGC 7000, Veil… or RA, Dec" aria-label="Find a target">
+          <input id="search" list="name-suggestions" placeholder="M31, Sh2-155, Soul Nebula… or RA, Dec" aria-label="Find a target" enterkeyhint="search" autocapitalize="off" spellcheck="false">
+          <datalist id="name-suggestions"></datalist>
           <button type="submit">Add</button>
         </form>
         <p id="search-status" class="hint" role="status"></p>
