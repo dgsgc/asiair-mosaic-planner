@@ -5,6 +5,7 @@
 // Star Adventurer controller.
 
 import AppKit
+import ApplicationServices
 import SwiftUI
 import UniformTypeIdentifiers
 import WebKit
@@ -253,6 +254,7 @@ enum SelfCheck {
             let js = """
               const r = {};
               r.title = document.title;
+              r.accessibility = \(AXIsProcessTrusted());
               r.inApp = document.documentElement.classList.contains('in-app');
               r.webgl2 = !!document.createElement('canvas').getContext('webgl2');
               r.skyCanvas = !!document.querySelector('#aladin canvas');
@@ -272,7 +274,11 @@ enum SelfCheck {
             """
             web.callAsyncJavaScript(js, arguments: [:], in: nil, in: .page) { result in
                 switch result {
-                case .success(let v): print(v as? String ?? "\(String(describing: v))")
+                case .success(let v):
+                    let text = v as? String ?? "\(String(describing: v))"
+                    print(text)
+                    // Also next to the picture, for runs started with `open`.
+                    if let picture { try? text.write(toFile: picture + ".json", atomically: true, encoding: .utf8) }
                 case .failure(let e): print("check failed: \(e)")
                 }
                 guard let picture else { exit(0) }

@@ -2,33 +2,33 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key>
-	<string>ASIAIR Mosaic Planner</string>
 	<key>CFBundleDisplayName</key>
 	<string>ASIAIR Mosaic Planner</string>
+	<key>CFBundleExecutable</key>
+	<string>ASIAIR Mosaic Planner</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>io.github.asiair-mosaic-planner.planner</string>
-	<key>CFBundleExecutable</key>
+	<key>CFBundleName</key>
 	<string>ASIAIR Mosaic Planner</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>13.0</string>
+	<string>2</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>CFBundleIconFile</key>
-	<string>AppIcon</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Sends plans to your Star Adventurer controller on your WiFi when you press Send to rig.</string>
 </dict>

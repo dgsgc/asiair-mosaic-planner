@@ -12,6 +12,21 @@ flags=(-O -target arm64-apple-macos13)
 core=(Sources/Core/*.swift)
 
 ui=(Sources/SenderUI/*.swift)
+
+# Signing. With a code-signing certificate of your own (SIGN_IDENTITY, or the
+# local one tools/make-signing-cert.sh makes in ~/.asiair-signing), macOS
+# recognises each new build as the same app, so permissions such as
+# Accessibility survive updates. Without one, the apps get an ad-hoc signature
+# and macOS asks again after every build.
+sign_id="-"
+local_kc="$HOME/.asiair-signing/signing.keychain-db"
+if [[ -n "${SIGN_IDENTITY:-}" ]]; then
+  sign_id="$SIGN_IDENTITY"
+elif [[ -f "$local_kc" && -f "$HOME/.asiair-signing/password" ]]; then
+  security unlock-keychain -p "$(cat "$HOME/.asiair-signing/password")" "$local_kc"
+  sign_id="ASIAIR Mosaic Planner local signing"
+fi
+echo "signing with: ${sign_id/#-/ad-hoc signature}"
 swiftc $flags $core Sources/CLI/main.swift -o build/asiair-send
 echo "built build/asiair-send"
 
@@ -27,8 +42,7 @@ if (( ${#appsrc} )); then
   cp Resources/Info.plist "$app/Contents/Info.plist"
   [[ -f Resources/AppIcon.icns ]] && cp Resources/AppIcon.icns "$app/Contents/Resources/"
   xattr -cr "$app"
-  # Ad-hoc signature: free, no Apple account. macOS asks once before opening it.
-  codesign --force --deep --sign - "$app"
+  codesign --force --deep --sign "$sign_id" "$app"
   codesign --verify --deep "$app"
   # A zip for GitHub Releases (keeps the app's structure and signature).
   ditto -c -k --keepParent "$app" "$work/ASIAIR-Plan-Sender.zip"
@@ -52,7 +66,7 @@ if (( ${#plannersrc} )); then
   cp ../index.html "$app/Contents/Resources/planner/"
   cp -R ../src ../data "$app/Contents/Resources/planner/"
   xattr -cr "$app"
-  codesign --force --deep --sign - "$app"
+  codesign --force --deep --sign "$sign_id" "$app"
   codesign --verify --deep "$app"
   ditto -c -k --keepParent "$app" "$work/ASIAIR-Mosaic-Planner.zip"
   rm -rf "build/ASIAIR Mosaic Planner.app"

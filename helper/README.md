@@ -58,6 +58,8 @@ It never starts a plan, never presses the shutter or any mount, guiding, focus o
 
 You need Apple's command line tools (`xcode-select --install`).
 
+**Signing:** by default the apps get an ad-hoc signature, so macOS treats every new build as a new app and asks for Accessibility again. Run `tools/make-signing-cert.sh` once to make a free code-signing certificate of your own (kept in its own keychain in `~/.asiair-signing`, not your login keychain); `build.sh` then signs with it, and permissions survive new builds. `SIGN_IDENTITY="…" ./build.sh` uses another certificate, such as an Apple Developer ID.
+
 ```bash
 ./build.sh
 ```
