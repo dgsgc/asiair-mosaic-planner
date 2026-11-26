@@ -77,7 +77,7 @@ build/asiair-send dump                        # list the ASIAIR app's controls (
 
 The command-line version needs the same Accessibility permission, given to the Terminal app you run it from.
 
-`"ASIAIR Mosaic Planner.app/Contents/MacOS/ASIAIR Mosaic Planner" --check [picture.png]` loads the planner, prints what works (sky view, storage, data files, name lookups) as JSON, saves a picture of the page and quits. Inside the app the page talks to the app through `window.webkit.messageHandlers.host` (save a file, copy, send to the ASIAIR, post to a controller); the same page in a browser works as before.
+`"ASIAIR Mosaic Planner.app/Contents/MacOS/ASIAIR Mosaic Planner" --check [picture.png]` loads the planner, prints what works (sky view, storage, data files, name lookups) as JSON, saves a picture of the page and quits. For the guide's screenshots it also takes `--seed plan.json` (a plan file loaded into throwaway storage, so the app's own rigs and targets aren't touched), `--size 1440x900`, `--wait 45` (seconds, for the sky images to load), `--js "…"` (run on the page first, for example to scroll) and `--send-picture panel.png` (opens the Send panel for the selected target and pictures it; nothing is sent). Inside the app the page talks to the app through `window.webkit.messageHandlers.host` (save a file, copy, send to the ASIAIR); the same page in a browser works as before.
 
 ## How it finds things
 

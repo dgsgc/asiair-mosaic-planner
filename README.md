@@ -8,6 +8,8 @@ It comes two ways, from the same code:
 
 Your rigs and targets stay in your browser (or in the app). The planner never connects to an ASIAIR itself; plans reach it through ZWO's own app.
 
+![A 2×2 mosaic of the North America and Pelican nebulae planned on DSS colour images, with NGC, IC and Sharpless labels](docs/screenshots/plan-a-mosaic.jpg)
+
 ## What it does
 
 - **Rigs:** add each rig's focal length and camera (common ZWO cameras are listed), or type the field of view from a plate solve, which is more exact. Each rig gets a colour, so several rigs can be planned side by side. Click a rig to plan with it: new targets use it, and so does the selected target. The rig in use is highlighted in its colour; its cog opens its settings.
@@ -25,12 +27,32 @@ Your rigs and targets stay in your browser (or in the app). The planner never co
 
 ## Using it
 
-**Mac app (Apple silicon):** **[download ASIAIR Mosaic Planner](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)**, unzip it and move it to Applications. It's the same planner, with the Plan Sender built in: **Send to ASIAIR** opens a panel that enters the plans into the ASIAIR app for Mac, and **Send to rig** reaches a Star Adventurer controller on your WiFi. Saving, opening and copying use normal Mac dialogs and the clipboard, and your rigs and targets are kept by the app.
+### A quick tour
+
+**1. Plan a mosaic.** Pick a rig on the left, search for a target (or browse and press **Add new**), and set columns and rows. The panels are drawn on the sky, numbered in the order they'll be shot; drag the sky underneath to frame it. Here a 600 mm refractor covers the North America and Pelican nebulae in four panels, with the NGC, IC and Sharpless labels switched on (the picture at the top).
+
+**2. Plan every rig side by side.** Each rig has its own colour, and each target remembers its rig. The Sky view and Rigs cards fold away to one line when you don't need them. Here a 1370 mm RC needs six panels for the Soul Nebula.
+
+![A 3×2 mosaic of the Soul Nebula for a second rig](docs/screenshots/another-rig.jpg)
+
+**3. Set up the target.** The target card has its position, camera angle (as the ASIAIR shows it after a plate solve), mosaic size and overlap, panel order, and the exposure lines for every panel, with the time per panel and for the whole mosaic.
+
+![The target card: position, camera angle, mosaic and exposures](docs/screenshots/target-settings.jpg)
+
+**4. Send it to the ASIAIR.** In the Mac app, **Send to ASIAIR** opens this panel over the planner. With the ASIAIR app for Mac open and connected, press **Send to ASIAIR**: each target becomes its own ASIAIR plan, every panel with its exposure lines. (Here the ASIAIR app isn't open yet, so the panel says so.) Online, save a send file for the Plan Sender, or copy the panels and paste them into the ASIAIR app.
+
+<img src="docs/screenshots/send-panel.png" alt="The Send to ASIAIR panel with one plan of four targets" width="460">
+
+The screenshots use example rigs and targets.
+
+### Getting it
+
+**Mac app (Apple silicon):** **[download ASIAIR Mosaic Planner](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)**, unzip it and move it to Applications. It's the same planner, with the Plan Sender built in: **Send to ASIAIR** opens a panel that enters the plans into the ASIAIR app for Mac. Saving, opening and copying use normal Mac dialogs and the clipboard, and your rigs and targets are kept by the app.
 - **First opening:** the app isn't signed with a paid Apple developer certificate, so right-click it, choose **Open**, then **Open** again (or System Settings → Privacy & Security → **Open Anyway**).
 - **Accessibility:** to send to the ASIAIR it needs System Settings → Privacy & Security → **Accessibility** (the Send panel has a button that opens it). Updates keep this permission. If it ever asks again although the app is switched on there, remove it with **−** and add it again with **+**.
 - **Bringing your plans:** press **Save** in the browser planner, then **Open** that file in the app.
 
-**Online:** <https://dgsgc.github.io/asiair-mosaic-planner/> works in any modern browser, iPad included. Everything except **Send to rig** works there; for the ASIAIR it saves a send file for the Plan Sender, or copies the panels.
+**Online:** <https://dgsgc.github.io/asiair-mosaic-planner/> works in any modern browser, iPad included. For the ASIAIR it saves a send file for the Plan Sender, or copies the panels.
 
 **On a Mac, in your browser (without the app):** double-click **Open Planner.command**. It serves the planner on this Mac at <http://localhost:8077> and opens it in your browser. The first time, macOS may ask whether to open it: right-click it, choose **Open**, then **Open** again.
 - **Same address every time:** your rigs and targets are kept by your browser for that address, so always open the planner the same way.
@@ -43,7 +65,7 @@ Your rigs and targets stay in your browser (or in the app). The planner never co
 python3 -m http.server 8077 --bind 127.0.0.1
 ```
 
-then go to <http://localhost:8077>. It can also be hosted as-is on GitHub Pages; that copy can do everything except **Send to rig**.
+then go to <http://localhost:8077>. It can also be hosted as-is on any static web host, such as GitHub Pages.
 
 ## Sending plans to the ASIAIR
 
@@ -52,18 +74,6 @@ The planner can't write to an ASIAIR itself (the ASIAIR only takes plans from ZW
 - **Mac app (easiest):** press **Send to ASIAIR: this target** or **…all for <rig>**. A Send panel slides down with the plans; with the ASIAIR app for Mac open and connected, press **Send to ASIAIR** there and leave the mouse alone while it works. Each target becomes its own ASIAIR plan, every panel with its exposure lines; nothing is started. Details and limits: [helper/README.md](helper/README.md).
 - **ASIAIR Plan Sender** (from the online planner; Mac, Apple silicon): save a send file with "Send file: this target" or "Send file: all for <rig>", then open it in the [Plan Sender](helper/README.md) with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. [Download the Plan Sender](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.0).
 - **By hand:** copy the panels, paste them with Import in the ASIAIR app's plan, and add the exposure lines in the app.
-
-## Sending plans to a Star Adventurer controller
-
-A rig can instead be set to **Controller: Star Adventurer controller** (in the rig's settings), with the controller's address (default `http://rig.local`). Its targets then get **Send to rig: this target** and **Send to rig: all for <rig>**, which POST the same send file the Plan Sender uses to `<address>/plan`. The controller stores the panels and the first Light exposure line; nothing moves or shoots until you start it there. The controller's reply lists what it took and any notes (other exposure lines ignored, a plan made for a different field of view).
-
-For these rigs:
-- **Overlap:** new targets start with 20% overlap.
-- **Exposure lines:** the exposures section says which line the controller will shoot, and warns when other lines will be ignored. Totals count only that line. Gain and binning are greyed out, because the controller sets the camera's ISO itself.
-- **Panel order:** back and forth in DEC by default. Consecutive panels differ only in DEC, apart from one RA move per group, which suits a controller that moves DEC itself.
-- **Camera angle:** the send file carries the camera angle (as the ASIAIR shows it), both the rig's (`rig.angle`) and each plan's own (`plans[].angle`). The controller can then warn when the camera is turned differently.
-
-The Mac app sends to the controller directly. In a browser, a page can only send to a device on your network when the page itself is local, so open the planner from your computer (`http://localhost`, see [Using it](#using-it)). From the online copy, use **Save send file** and load the file on the controller's page instead.
 
 ## What the ASIAIR app does with the pasted text
 

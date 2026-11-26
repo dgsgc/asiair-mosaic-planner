@@ -223,7 +223,17 @@ struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(PlannerFiles(), forURLScheme: PlannerFiles.scheme)
-        config.websiteDataStore = .default()
+        // --seed plan.json (with --check): a throwaway store holding that plan,
+        // for the guide's screenshots. The app's own data is never touched.
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--seed"), i + 1 < args.count,
+           let seed = try? String(contentsOfFile: args[i + 1], encoding: .utf8) {
+            config.websiteDataStore = .nonPersistent()
+            let js = "localStorage.setItem('asiair-mosaic-planner.v1', \(String(reflecting: seed)));"
+            config.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        } else {
+            config.websiteDataStore = .default()
+        }
         config.userContentController.addScriptMessageHandler(Bridge.shared, contentWorld: .page, name: "host")
         let web = WKWebView(frame: .zero, configuration: config)
         web.uiDelegate = Bridge.shared
@@ -249,8 +259,23 @@ struct WebView: NSViewRepresentable {
 /// prints what works (sky view, storage, data files, app bridge) as JSON,
 /// saves a picture of the page and quits. Changes nothing.
 enum SelfCheck {
+    static func option(_ name: String) -> String? {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: name), i + 1 < a.count else { return nil }
+        return a[i + 1]
+    }
+
     static func run(_ web: WKWebView, picture: String?) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
+        // --size 1440x900: the window's content size.
+        if let s = option("--size")?.split(separator: "x").compactMap({ Double($0) }), s.count == 2 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { web.window?.setContentSize(NSSize(width: s[0], height: s[1])) }
+        }
+        // --js "…": run on the page once it has loaded (scroll, open a card…).
+        if let js = option("--js") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { web.evaluateJavaScript(js) }
+        }
+        let wait = Double(option("--wait") ?? "") ?? 12
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
             let js = """
               const r = {};
               r.title = document.title;
@@ -287,7 +312,18 @@ enum SelfCheck {
                        let png = rep.representation(using: .png, properties: [:]) {
                         try? png.write(to: URL(fileURLWithPath: picture))
                     }
-                    exit(0)
+                    // --send-picture out.png: press the page's Send to ASIAIR
+                    // (this target) and picture the Send panel. Nothing is sent.
+                    guard let sendPicture = option("--send-picture") else { exit(0) }
+                    web.evaluateJavaScript("document.getElementById('send-target').click()")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                        // The app's own window, as the screen shows it.
+                        if let sheet = web.window?.attachedSheet,
+                           let image = CGWindowListCreateImage(.null, .optionIncludingWindow, CGWindowID(sheet.windowNumber), [.boundsIgnoreFraming, .bestResolution]) {
+                            try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: sendPicture))
+                        }
+                        exit(0)
+                    }
                 }
             }
         }
