@@ -403,6 +403,89 @@ public final class Sender {
         }
     }
 
+    /// Open one imported target from the plan page by its name, scrolling the
+    /// row of targets to the right if it isn't in view yet.
+    func cardTitle(_ name: String) throws -> AXNode {
+        for attempt in 0..<12 {
+            if let title = els.first(where: { $0.role == "AXStaticText" && $0.label == name && local($0).minY < win.height * 0.3 }) {
+                return title
+            }
+            // Not in view: scroll the targets sideways and look again.
+            let p = CGPoint(x: win.minX + win.width * 0.5, y: win.minY + win.height * 0.5)
+            Mouse.scroll(at: p, dx: -300)
+            pause(attempt == 0 ? 0.6 : 0.4)
+        }
+        throw failure("Couldn't find the target “\(name)” on the plan page.")
+    }
+
+    func openTarget(_ name: String) throws {
+        log("  opening \(name)")
+        let t = try cardTitle(name)
+        // Its Detail button sits at the bottom of the same card.
+        guard let detail = nodes("Detail", role: "AXButton")
+            .filter({ $0.frame.minX >= t.frame.minX - 30 && $0.frame.minX < t.frame.maxX })
+            .min(by: { abs($0.frame.minX - t.frame.minX) < abs($1.frame.minX - t.frame.minX) }) else {
+            throw failure("Couldn't find the Detail button for “\(name)”.")
+        }
+        for attempt in 1...3 {
+            pause(attempt == 1 ? 0.4 : 0.8)
+            detail.press()
+            if (try? wait("“\(name)” to open", timeout: 3) { currentPlanTitle == name && onTargetPage ? air.window : nil }) != nil { return }
+        }
+        throw failure("The target “\(name)” didn't open.")
+    }
+
+    /// The plan page's "Target done/ticked" line, e.g. "Target 0/2".
+    var tickedCount: Int? {
+        for n in els where n.role == "AXStaticText" && n.label.hasPrefix("Target ") {
+            let parts = n.label.dropFirst("Target ".count).split(separator: "/")
+            if parts.count == 2, let ticked = Int(parts[1].trimmingCharacters(in: .whitespaces)) { return ticked }
+        }
+        return nil
+    }
+
+    /// Targets whose exposures were added by hand are left unticked (left out
+    /// of the plan) by the app. Tick each one that is off, checking the
+    /// plan's ticked count after every press and undoing a press that
+    /// lowered it, so no tick is ever left changed the wrong way.
+    func tickAll(_ names: [String]) throws {
+        guard onPlanPage else { throw failure("Expected the plan page.") }
+        guard var count = tickedCount else { throw failure("Couldn't read the plan's target count.") }
+        for name in names where count < names.count {
+            try checkStop()
+            let title = try cardTitle(name)
+            guard let tick = nodes("newplan unselected target", role: "AXButton")
+                .filter({ $0.frame.maxX <= title.frame.minX + 4 && $0.frame.minX > title.frame.minX - 40 })
+                .first else { throw failure("Couldn't find the tick for “\(name)”.") }
+            tick.press()
+            pause(0.7)
+            var now = tickedCount ?? count
+            if now == count {  // the press didn't register: tap it instead
+                tick.click()
+                pause(0.7)
+                now = tickedCount ?? count
+            }
+            if now < count {  // it was ticked already: put it back
+                let lowered = now
+                tick.press()
+                pause(0.7)
+                now = tickedCount ?? lowered
+                if now == lowered {
+                    tick.click()
+                    pause(0.7)
+                    now = tickedCount ?? lowered
+                }
+                if now < count { throw failure("Couldn't put back the tick on “\(name)”. Tick it again in the ASIAIR app.") }
+            } else if now > count {
+                log("  ticked \(name)")
+            }
+            count = now
+        }
+        guard count >= names.count else {
+            throw failure("Only \(count) of \(names.count) targets are ticked. Tick the others in the ASIAIR app.")
+        }
+    }
+
     func finishTarget(applyToAll: Bool) throws {
         guard let back = node("back left", role: "AXButton") else { throw failure("Couldn't find the back button.") }
         back.press()
@@ -484,7 +567,25 @@ public final class Sender {
                 try checkStop()
                 try addExposure(e)
             }
-            try finishTarget(applyToAll: plan.targets.count > 1 && !plan.exposures.isEmpty)
+            // The app's "apply to all importing targets" copies every setting
+            // of the exposure lines except the gain (seen 26 Nov 2026: the
+            // other panels got "Default Gain"). So when a line has a gain,
+            // decline it and add the lines to each panel in turn instead.
+            let many = plan.targets.count > 1 && !plan.exposures.isEmpty
+            let byHand = many && plan.exposures.contains { $0.gain != nil }
+            try finishTarget(applyToAll: many && !byHand)
+            if byHand {
+                for target in plan.targets.dropFirst() {
+                    try checkStop()
+                    try openTarget(target.name)
+                    for e in plan.exposures {
+                        try checkStop()
+                        try addExposure(e)
+                    }
+                    try finishTarget(applyToAll: false)
+                }
+                try tickAll(plan.targets.map(\.name))
+            }
             log("✓ “\(plan.name)” is on the ASIAIR (\(plan.targets.count) target\(plan.targets.count == 1 ? "" : "s"), \(plan.exposures.count) exposure line\(plan.exposures.count == 1 ? "" : "s")).")
         }
         log("Done. Nothing has been started; check the plans in the ASIAIR app.")

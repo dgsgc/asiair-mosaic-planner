@@ -128,6 +128,20 @@ public enum Mouse {
 }
 
 extension Mouse {
+    /// Scroll sideways over a point (negative dx shows what is further right).
+    public static func scroll(at p: CGPoint, dx: Int32) {
+        prepare()
+        let src = CGEventSource(stateID: .hidSystemState)
+        CGEvent(mouseEventSource: src, mouseType: .mouseMoved, mouseCursorPosition: p, mouseButton: .left)?.post(tap: .cghidEventTap)
+        usleep(40_000)
+        if let e = CGEvent(scrollWheelEvent2Source: src, units: .pixel, wheelCount: 2, wheel1: 0, wheel2: dx, wheel3: 0) {
+            e.location = p
+            e.post(tap: .cghidEventTap)
+        }
+    }
+}
+
+extension Mouse {
     public enum Route { case hid, session, app(pid_t) }
 
     /// The tap that opened the ASIAIR app's mode menu (18 Nov 2026): move

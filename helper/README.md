@@ -9,14 +9,14 @@ Unofficial. Not made or supported by ZWO.
 ## What you need
 
 - A Mac with Apple silicon (M1 or later), macOS 13 or later. The ASIAIR app only runs on these.
-- The ASIAIR app for Mac, from the App Store, connected to your ASIAIR. Tested with ASIAIR app 3.0.0 and ASIAIR firmware 14.39.
+- The ASIAIR app for Mac, from the App Store, connected to your ASIAIR. Tested with ASIAIR app 3.0.0 and ASIAIR firmware 14.39 (a 2-panel plan with two exposure lines, sent to an ASIAIR Mini on 26 Nov 2026).
 - A send file (`.asiairplan`) saved from the planner.
 
 ## Install
 
 1. Download `ASIAIR-Plan-Sender.zip` from the Releases page, unzip it, and move **ASIAIR Plan Sender** to Applications.
 2. **First opening:** the app isn't signed with a paid Apple developer certificate, so macOS warns about it. Right-click (or Control-click) the app and choose **Open**, then **Open** again. On recent macOS versions you may instead need System Settings → Privacy & Security → **Open Anyway**. You only do this once.
-3. **Allow it to operate other apps:** the first time, Plan Sender shows a button to open the right settings page. In System Settings → Privacy & Security → **Accessibility**, turn on **ASIAIR Plan Sender**. macOS may ask again after you install a new version.
+3. **Allow it to operate other apps:** the first time, Plan Sender shows a button to open the right settings page. In System Settings → Privacy & Security → **Accessibility**, turn on **ASIAIR Plan Sender**. macOS may ask again after you install a new version. If Plan Sender still asks while it is switched on, the setting belongs to an older copy: remove it with **−**, add the app again with **+** and switch it on.
 
 Prefer to build it yourself? See [Building](#building) below.
 
@@ -40,7 +40,7 @@ For each plan in the file it:
 2. creates a new plan with that name (plan options are left at the app's defaults)
 3. imports the panels with the app's **Import**
 4. adds each exposure line (type, exposure, gain, count, binning) to the first panel, and checks each line on screen
-5. answers the app's "Apply current sequence and settings to all importing targets" with **Apply**, so every panel gets the same lines
+5. gives every panel the same lines. When every line uses the camera's default gain, it answers the app's "Apply current sequence and settings to all importing targets" with **Apply**. When a line has its own gain, it answers **Cancel** and adds the lines to each panel itself, because the app's Apply copies everything except the gain (the other panels get "Default Gain"). That takes longer, about 10–15 seconds per line per panel, and the app then leaves those panels unticked, so Plan Sender ticks them again, checking the plan's target count after each tick
 
 It never starts a plan, never presses the shutter or any mount, guiding, focus or camera control, and never changes or deletes your existing plans. It stops at the first thing it doesn't expect and says what happened. When it stops, it saves a description of the screen to your Desktop (`plan-sender-debug-….txt`), which helps if you report a problem.
 
