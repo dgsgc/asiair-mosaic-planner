@@ -16,7 +16,7 @@ Unofficial. Not made or supported by ZWO.
 
 ## Install
 
-1. Download `ASIAIR-Plan-Sender.zip` from [its release](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.0), unzip it, and move **ASIAIR Plan Sender** to Applications.
+1. Download `ASIAIR-Plan-Sender.zip` from [its release](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.1), unzip it, and move **ASIAIR Plan Sender** to Applications.
 2. **First opening:** the app isn't signed with a paid Apple developer certificate, so macOS warns about it. Right-click (or Control-click) the app and choose **Open**, then **Open** again. On recent macOS versions you may instead need System Settings → Privacy & Security → **Open Anyway**. You only do this once.
 3. **Allow it to operate other apps:** the first time, Plan Sender shows a button to open the right settings page. In System Settings → Privacy & Security → **Accessibility**, turn on **ASIAIR Plan Sender**. Updates keep this permission. If Plan Sender ever asks while it is switched on there, the setting belongs to an older copy: remove it with **−**, add the app again with **+** and switch it on.
 

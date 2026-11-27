@@ -74,7 +74,7 @@ then go to <http://localhost:8077>. It can also be hosted as-is on any static we
 The planner can't write to an ASIAIR itself (the ASIAIR only takes plans from ZWO's app). Three ways to get a plan in:
 
 - **Mac app (easiest):** press **Send to ASIAIR: this target** or **…all for <rig>**. A Send panel slides down with the plans; with the ASIAIR app for Mac open and connected, press **Send to ASIAIR** there and leave the mouse alone while it works. Each target becomes its own ASIAIR plan, every panel with its exposure lines; nothing is started. Details and limits: [helper/README.md](helper/README.md).
-- **ASIAIR Plan Sender** (from the online planner; Mac, Apple silicon): save a send file with "Send file: this target" or "Send file: all for <rig>", then open it in the [Plan Sender](helper/README.md) with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. [Download the Plan Sender](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.0).
+- **ASIAIR Plan Sender** (from the online planner; Mac, Apple silicon): save a send file with "Send file: this target" or "Send file: all for <rig>", then open it in the [Plan Sender](helper/README.md) with the ASIAIR app open. Each target becomes its own ASIAIR plan, exposures included. [Download the Plan Sender](https://github.com/dgsgc/asiair-mosaic-planner/releases/tag/sender-v0.1.1).
 - **By hand:** copy the panels, paste them with Import in the ASIAIR app's plan, and add the exposure lines in the app.
 
 ## What the ASIAIR app does with the pasted text
