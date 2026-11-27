@@ -1,0 +1,37 @@
+# Publishes https://dgsgc.github.io/asiair-mosaic-planner/: the project page (site/) at the top,
+# and the planner itself under app/ (index.html, src/ and data/ as they are in the repository).
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Put the page and the planner together
+        run: |
+          mkdir -p _site/app
+          cp -R site/. _site/
+          cp -R index.html src data _site/app/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

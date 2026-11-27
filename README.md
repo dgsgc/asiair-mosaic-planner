@@ -3,8 +3,10 @@
 Plan single targets and mosaics for ZWO ASIAIR rigs on real sky images, during the day, then send them to the ASIAIR app (exposures included) or paste the panels into its plan.
 
 It comes two ways, from the same code:
-- **Online:** a single web page with no server of its own, at <https://dgsgc.github.io/asiair-mosaic-planner/> (any modern browser, iPad included).
+- **Online:** a single web page with no server of its own, at <https://dgsgc.github.io/asiair-mosaic-planner/app/> (any modern browser, iPad included).
 - **Mac app:** the same planner with the sending built in. **[Download it](https://github.com/dgsgc/asiair-mosaic-planner/releases/latest)**.
+
+**Project page:** [dgsgc.github.io/asiair-mosaic-planner](https://dgsgc.github.io/asiair-mosaic-planner/), with screenshots and a quick start.
 
 Your rigs and targets stay in your browser (or in the app). The planner never connects to an ASIAIR itself; plans reach it through ZWO's own app.
 
@@ -52,7 +54,7 @@ The screenshots use example rigs and targets.
 - **Accessibility:** to send to the ASIAIR it needs System Settings → Privacy & Security → **Accessibility** (the Send panel has a button that opens it). Updates keep this permission. If it ever asks again although the app is switched on there, remove it with **−** and add it again with **+**.
 - **Bringing your plans:** press **Save** in the browser planner, then **Open** that file in the app.
 
-**Online:** <https://dgsgc.github.io/asiair-mosaic-planner/> works in any modern browser, iPad included. For the ASIAIR it saves a send file for the Plan Sender, or copies the panels.
+**Online:** <https://dgsgc.github.io/asiair-mosaic-planner/app/> works in any modern browser, iPad included. For the ASIAIR it saves a send file for the Plan Sender, or copies the panels.
 
 **On a Mac, in your browser (without the app):** double-click **Open Planner.command**. It serves the planner on this Mac at <http://localhost:8077> and opens it in your browser. The first time, macOS may ask whether to open it: right-click it, choose **Open**, then **Open** again.
 - **Same address every time:** your rigs and targets are kept by your browser for that address, so always open the planner the same way.
@@ -65,7 +67,7 @@ The screenshots use example rigs and targets.
 python3 -m http.server 8077 --bind 127.0.0.1
 ```
 
-then go to <http://localhost:8077>. It can also be hosted as-is on any static web host, such as GitHub Pages.
+then go to <http://localhost:8077>. It can also be hosted as-is on any static web host. The online copy is published by `.github/workflows/pages.yml`, which puts the project page (`site/`) at the top and the planner under `app/`.
 
 ## Sending plans to the ASIAIR
 

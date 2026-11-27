@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASIAIR Mosaic Planner: plan mosaics on the real sky</title>
+<meta name="description" content="Free mosaic planner for ASIAIR rigs: frame single targets and mosaics on real sky images, every rig side by side, then send them to the ASIAIR app with exposures. In your browser or as a Mac app.">
+<meta property="og:title" content="ASIAIR Mosaic Planner">
+<meta property="og:description" content="Plan ASIAIR mosaics on real sky images, every rig side by side, and send them to the ASIAIR app with exposures.">
+<meta property="og:image" content="https://dgsgc.github.io/asiair-mosaic-planner/img/plan-a-mosaic.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='6' width='14' height='11' rx='1.5' fill='none' stroke='%235b9cf5' stroke-width='2.6'/%3E%3Crect x='14' y='15' width='14' height='11' rx='1.5' fill='none' stroke='%235b9cf5' stroke-width='2.6'/%3E%3C/svg%3E">
+<script>
+// The planner itself used to live at this address. Someone who has used it before (their rigs are
+// saved in this browser) and arrives from a bookmark or another site goes straight to it. Coming
+// from these pages, or with #about, shows this page.
+try {
+  const fromHere = (document.referrer || "").startsWith(location.origin);
+  if (!fromHere && !location.hash && localStorage.getItem("asiair-mosaic-planner.v1")) location.replace("app/");
+} catch (e) { /* show this page */ }
+</script>
+<style>
+:root { color-scheme: dark;
+  --bg: #0e1013; --panel: #171a1f; --line: #262a31; --text: #e8eaed; --text2: #a3a9b3;
+  --ok: #4fb06d; --accent: #5b9cf5; --warn: #e0a43a; --alert: #e25b4b; --link: #7cb8ff;
+  --r: 12px; --max: 1080px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg) radial-gradient(1100px 520px at 70% -120px, rgba(91,156,245,.10), transparent 70%) no-repeat; color: var(--text); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--link); }
+img { max-width: 100%; height: auto; display: block; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+section { padding: 64px 0; }
+/* sections told apart by a slight change of shade, each with a very gentle gradient */
+section:nth-of-type(odd)  { background: linear-gradient(180deg, #14181e 0%, #101318 100%); }
+section:nth-of-type(even) { background: linear-gradient(180deg, #0e1013 0%, #12151a 100%); }
+section#install { background: linear-gradient(180deg, #121820 0%, #0f141a 100%); }
+h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; margin: 0 0 14px; letter-spacing: -0.02em; }
+h2 { font-size: clamp(23px, 3.2vw, 30px); line-height: 1.2; margin: 0 0 18px; letter-spacing: -0.01em; }
+h3 { font-size: 18px; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.lead { font-size: clamp(18px, 2.2vw, 21px); color: var(--text2); max-width: 720px; }
+.muted { color: var(--text2); }
+small, .small { font-size: 14px; color: var(--text2); }
+
+/* top */
+header { padding: 18px 0; }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text); text-decoration: none; }
+.brand svg { width: 24px; height: 24px; }
+header nav a { color: var(--text2); text-decoration: none; margin-left: 18px; font-size: 15px; }
+header nav a:hover { color: var(--text); }
+.hero { padding: 36px 0 56px; }
+.hero .shot { margin-top: 34px; }
+
+/* hero mock-up: a tablet in landscape with a phone in front of it, drawn in CSS */
+.devices { position: relative; margin: 40px 0 0; padding: 0 9% 6% 0; }
+.tablet, .handset { background: linear-gradient(145deg, #2a2f37, #0b0d10 55%, #1b1f25); box-shadow: 0 30px 70px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.07); }
+.tablet { border-radius: clamp(16px, 3vw, 34px); padding: clamp(8px, 1.6vw, 18px); }
+.tablet .screen { border-radius: clamp(8px, 1.4vw, 16px); overflow: hidden; background: #000; aspect-ratio: 1600 / 1000; }
+.handset { position: absolute; right: 0; bottom: 0; width: 23%; border-radius: clamp(16px, 3.2vw, 36px); padding: clamp(4px, .7vw, 8px); }
+.handset .screen { border-radius: clamp(12px, 2.6vw, 29px); overflow: hidden; background: #000; aspect-ratio: 9 / 19.5; }
+.handset .screen img, .tablet .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.devices + .cap { margin-top: 14px; }
+
+/* buttons */
+.dl { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 8px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 16px;
+       text-decoration: none; border: 1px solid #3c434e; color: var(--text); background: #20252c; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #06101f; }
+.btn:hover { filter: brightness(1.1); }
+.btn .sub { font-weight: 400; font-size: 13px; opacity: .8; }
+
+/* screenshots */
+.shot { border-radius: var(--r); border: 1px solid var(--line); overflow: hidden; background: #000; }
+.cap { font-size: 14px; color: var(--text2); margin-top: 8px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.phone { aspect-ratio: 600 / 1298; }
+.phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
+/* points */
+.points { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 34px; margin-top: 8px; }
+.point { padding-left: 16px; border-left: 3px solid var(--line); }
+.point p { color: var(--text2); margin: 0; }
+.point.ok { border-color: var(--ok); } .point.warn { border-color: var(--warn); } .point.alert { border-color: var(--alert); }
+
+/* levels table */
+.levels { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 16px; }
+.levels td { padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+.levels td:first-child { white-space: nowrap; font-weight: 600; width: 1%; }
+.tag { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: 13px; font-weight: 700; }
+.tag.ok { background: rgba(79,176,109,.18); color: var(--ok); }
+.tag.warn { background: rgba(224,164,58,.18); color: var(--warn); }
+.tag.alert { background: rgba(226,91,75,.2); color: var(--alert); }
+
+.steps { list-style: none; counter-reset: st; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 34px; }
+.steps li { counter-increment: st; position: relative; padding-left: 46px; }
+.steps li::before { content: counter(st); position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: 15px; color: var(--accent); background: rgba(91,156,245,.14); border: 1px solid rgba(91,156,245,.35); }
+.steps p { color: var(--text2); margin: 0; }
+
+/* settings pop-up */
+dialog#settings { width: min(720px, calc(100vw - 32px)); max-height: min(86vh, 900px); overflow: auto; padding: 0; border: 1px solid var(--line); border-radius: var(--r);
+  background: linear-gradient(180deg, #181c22, #121519); color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+dialog#settings::backdrop { background: rgba(5,7,9,.7); backdrop-filter: blur(2px); }
+.dlg-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px;
+  background: #181c22; border-bottom: 1px solid var(--line); }
+.dlg-head h2 { margin: 0; font-size: 21px; }
+.dlg-x { background: none; border: 1px solid var(--line); color: var(--text2); border-radius: 8px; width: 34px; height: 34px; font-size: 22px; line-height: 1; cursor: pointer; }
+.dlg-x:hover { color: var(--text); }
+.dlg-body { padding: 16px 20px 22px; font-size: 15.5px; }
+.dlg-body h3 { margin: 20px 0 8px; font-size: 15px; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.dlg-body dl { margin: 0; display: grid; grid-template-columns: 11em 1fr; gap: 8px 16px; }
+.dlg-body dt { font-weight: 600; }
+.dlg-body dd { margin: 0; color: var(--text2); }
+@media (max-width: 560px) { .dlg-body dl { grid-template-columns: 1fr; gap: 2px; } .dlg-body dd { margin-bottom: 8px; } }
+
+/* install */
+.install { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+.card ol { margin: 10px 0 0; padding-left: 20px; color: var(--text2); }
+.card li { margin-bottom: 6px; }
+.card .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: #0a0c0f; border: 1px solid var(--line);
+       border-radius: 6px; padding: 2px 6px; word-break: break-all; }
+pre { margin: 10px 0 0; } pre code { display: block; padding: 10px; white-space: pre-wrap; }
+.copy { margin-top: 8px; font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: none; color: var(--text2); cursor: pointer; }
+
+footer { padding: 36px 0 60px; background: #0a0c0f; color: var(--text2); font-size: 15px; }
+footer a { color: var(--text2); }
+
+@media (max-width: 820px) {
+  .points, .install, .steps { grid-template-columns: 1fr; }
+  header nav { display: none; }
+  section { padding: 48px 0; }
+}
+@media (max-width: 520px) {
+  .grid3 { grid-template-columns: 1fr 1fr; }
+  .grid3 > :nth-child(3) { display: none; }
+  .wrap { padding: 0 16px; }
+  .btn { width: 100%; justify-content: center; }
+  .devices { padding: 0 14% 10% 0; }
+  .handset { width: 30%; }
+}
+
+/* planner: the Send panel floating in front of the tablet, like a Mac window */
+.tablet .screen.wide { aspect-ratio: 1600 / 964; }
+.window { position: absolute; right: 0; bottom: 0; width: 30%; border-radius: 12px; overflow: hidden; border: 1px solid #3a3f47;
+  box-shadow: 0 30px 70px rgba(0,0,0,.6); background: #1c1f24; }
+.window img { width: 100%; }
+.grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.install.two { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 820px) { .grid2, .install.two { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .window { width: 38%; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="14" height="11" rx="1.5" fill="none" stroke="#5b9cf5" stroke-width="2.6"/><rect x="14" y="15" width="14" height="11" rx="1.5" fill="none" stroke="#5b9cf5" stroke-width="2.6"/></svg>ASIAIR Mosaic Planner</a>
+    <nav><a href="#why">Why</a><a href="#get">Get it</a><a href="#start">Getting started</a><a href="https://dgsgc.github.io/">More tools</a><a href="https://github.com/dgsgc/asiair-mosaic-planner">GitHub</a></nav>
+  </div>
+</header>
+
+<main>
+<div class="wrap hero">
+  <h1>Plan your mosaics on the real sky.<br>Send them to the ASIAIR in one go.</h1>
+  <p class="lead">Frame a target or a mosaic on real sky images, for every rig side by side, during the day. Add the exposures, then send the whole plan to the ASIAIR app instead of typing it in panel by panel.</p>
+  <div class="dl">
+    <a class="btn primary" href="app/">Open the planner</a>
+    <a class="btn" data-asset="mac" href="https://github.com/dgsgc/asiair-mosaic-planner/releases/download/app-v0.1.0/ASIAIR-Mosaic-Planner.zip">Download the Mac app</a>
+  </div>
+  <p class="small">Free. Works in any modern browser, iPad included. It never connects to an ASIAIR itself: plans go in through ZWO's own app.</p>
+  <div class="devices">
+    <div class="tablet"><div class="screen wide"><img src="img/plan-a-mosaic.jpg" width="1600" height="964" alt="A 2×2 mosaic of the North America and Pelican nebulae planned on DSS colour images, with NGC, IC and Sharpless labels"></div></div>
+    <div class="window"><img src="img/send-panel.jpg" width="735" height="760" alt="The Mac app's Send to ASIAIR panel with one plan of four panels"></div>
+  </div>
+  <p class="cap">A 2×2 mosaic of the North America and Pelican nebulae for a 600 mm refractor, and the Mac app's Send panel ready to enter it into the ASIAIR app, exposures included.</p>
+</div>
+
+<section id="why">
+  <div class="wrap">
+    <h2>Why it's useful</h2>
+    <div class="points">
+      <div class="point"><h3>Plan on the real sky</h3><p>Frames are drawn on sky survey images (DSS, SDSS, Pan-STARRS and more), with Messier, NGC, IC, Sharpless, LBN, LDN, Barnard and other catalogues labelled. Plan in daylight, not at the scope.</p></div>
+      <div class="point"><h3>Every rig side by side</h3><p>Each rig gets its own colour, and each target remembers its rig. See how a target fits a short refractor and a long RC before you choose.</p></div>
+      <div class="point"><h3>Mosaics worked out on the sky</h3><p>Columns, rows, overlap (15% by default, as the ASIAIR app suggests) and angle. Panel centres and angles are calculated on the sphere, and numbered in the order they'll be shot.</p></div>
+      <div class="point"><h3>Exposures included</h3><p>Give each target its exposure lines (light, flat, gain, count, binning) and see the time per panel and for the whole mosaic.</p></div>
+      <div class="point"><h3>No typing panels into the app</h3><p>The Mac app enters every panel into the ASIAIR app for Mac, exposures and all. Or copy the panels and paste them with Import on the ASIAIR app's Plan screen.</p></div>
+      <div class="point"><h3>Finds what imagers call things</h3><p>Soul Nebula, Pacman, Elephant's Trunk: about 110 common names, catalogue numbers however they're written, and anything else from SIMBAD.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>A closer look</h2>
+    <div class="grid2">
+      <div><div class="shot"><img src="img/another-rig.jpg" width="1600" height="964" alt="A 3×2 mosaic of the Soul Nebula for a second rig" loading="lazy"></div><p class="cap">A second rig in its own colour: a 1370 mm RC needs six panels for the Soul Nebula.</p></div>
+      <div><div class="shot"><img src="img/target-settings.jpg" width="1600" height="964" alt="The target card: position, camera angle, mosaic and exposures" loading="lazy"></div><p class="cap">The target card: position, camera angle (as the ASIAIR shows it after a plate solve), mosaic and exposures.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="get">
+  <div class="wrap">
+    <h2>Get it</h2>
+    <p class="muted">The same planner two ways. Your rigs and targets stay in your browser or in the app; Save and Open move them between the two.</p>
+    <div class="install two">
+      <div class="card">
+        <h3>In your browser</h3>
+        <span class="small">Any modern browser: Mac, Windows, Linux, iPad</span>
+        <ol>
+          <li>Open the planner. Nothing to install.</li>
+          <li>To get plans into the ASIAIR: copy the panels and paste them into the ASIAIR app, or save a send file for the Plan Sender (Mac).</li>
+        </ol>
+        <div class="btns"><a class="btn primary" href="app/">Open the planner</a></div>
+      </div>
+      <div class="card">
+        <h3>Mac app</h3>
+        <span class="small">Apple silicon (M1 and later), macOS 13 or later</span>
+        <ol>
+          <li>Download, unzip, and drag it into Applications.</li>
+          <li>First time: right-click it, choose <b>Open</b>, then <b>Open</b> again.</li>
+          <li>To send plans, allow it in System Settings → Privacy &amp; Security → <b>Accessibility</b>. The Send panel has a button that takes you there.</li>
+        </ol>
+        <div class="btns"><a class="btn primary" data-asset="mac" href="https://github.com/dgsgc/asiair-mosaic-planner/releases/download/app-v0.1.0/ASIAIR-Mosaic-Planner.zip">Download the Mac app</a></div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:20px"><span id="ver"></span></p>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Getting started</h2>
+    <ol class="steps">
+      <li><h3>Add your rigs</h3><p>Focal length and camera (common ZWO cameras are listed), or type the field of view from a plate solve, which is more exact.</p></li>
+      <li><h3>Find a target</h3><p>Search by name or coordinates. Or press <b>Browse</b>, drag around the sky, and <b>Add new</b> where you like.</p></li>
+      <li><h3>Frame it</h3><p>Set columns and rows, then drag the sky underneath the frame. Tick <b>Lock position</b> when you're happy.</p></li>
+      <li><h3>Send it</h3><p>Add the exposure lines, then <b>Send to ASIAIR</b> in the Mac app with the ASIAIR app open and connected. Each target becomes its own ASIAIR plan; nothing is started.</p></li>
+    </ol>
+    <p class="small" style="margin-top:22px">Unofficial: the ASIAIR only takes plans from ZWO's app, so the planner works through it. More detail, including what the ASIAIR app does with pasted panels, is in the <a href="https://github.com/dgsgc/asiair-mosaic-planner#readme">guide on GitHub</a>.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>ASIAIR Mosaic Planner is free, with its source on GitHub. It isn't made by or connected with ZWO. Sky images come from the CDS (Strasbourg) through Aladin Lite.</p>
+    <p>Also from the same set: <a href="https://dgsgc.github.io/astro-rig-monitor/">Astro Rig Monitor</a>, every rig's guiding on one screen. <a href="https://dgsgc.github.io/">All the tools</a></p>
+    <p><a href="https://github.com/dgsgc/asiair-mosaic-planner">Source on GitHub</a> ·
+       <a href="https://github.com/dgsgc/asiair-mosaic-planner/releases">All releases</a> ·
+       <a href="https://github.com/dgsgc/asiair-mosaic-planner/issues">Questions and problems</a></p>
+  </div>
+</footer>
+
+<script>
+// Point the Mac download at the newest app release (the link in the page is a fallback).
+(async () => {
+  try {
+    const r = await fetch("https://api.github.com/repos/dgsgc/asiair-mosaic-planner/releases?per_page=30");
+    if (!r.ok) return;
+    const app = (await r.json()).find(x => !x.draft && !x.prerelease && x.tag_name.startsWith("app-v"));
+    const url = app && (app.assets.find(a => a.name === "ASIAIR-Mosaic-Planner.zip") || {}).browser_download_url;
+    if (url) document.querySelectorAll('[data-asset="mac"]').forEach(a => a.href = url);
+    if (app) document.getElementById("ver").textContent = "Newest Mac app: " + app.tag_name.slice(5) + ".";
+  } catch (e) { /* keep the link in the page */ }
+})();
+</script>
+</body>
+</html>
