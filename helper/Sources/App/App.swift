@@ -13,7 +13,7 @@ struct PlanSenderApp: App {
 
     var body: some Scene {
         Window("ASIAIR Plan Sender", id: "main") {
-            ContentView()
+            ContentView().tint(.plannerTeal)
                 .environmentObject(model)
                 .frame(minWidth: 520, minHeight: 600)
         }

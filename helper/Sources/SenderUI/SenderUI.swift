@@ -121,6 +121,11 @@ final class Model: ObservableObject {
 /// This app's name, for messages ("ASIAIR Plan Sender" or "ASIAIR Mosaic Planner").
 let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "This app"
 
+extension Color {
+    /// The planner's own colour in the tools' shared design (teal #3bb3a1).
+    static let plannerTeal = Color(red: 59 / 255, green: 179 / 255, blue: 161 / 255)
+}
+
 struct ContentView: View {
     @EnvironmentObject var model: Model
     @State private var dropping = false

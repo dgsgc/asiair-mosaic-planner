@@ -212,7 +212,7 @@ struct PlannerView: View {
             .onAppear { Bridge.shared.openSendWindow = { sending = true } }
             // Send to ASIAIR slides down over the planner.
             .sheet(isPresented: $sending) {
-                ContentView(onClose: { sending = false })
+                ContentView(onClose: { sending = false }).tint(.plannerTeal)
                     .environmentObject(model)
                     .frame(width: 600, height: 620)
             }

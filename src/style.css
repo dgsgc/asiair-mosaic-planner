@@ -1,10 +1,12 @@
 :root {
+  /* colours from the tools' shared design (dgsgc.github.io design/suite.css): the planner's own
+     colour is teal; dark matches the other tools, light is the planner's own version */
   --bg: #f6f7f9;
   --panel: #ffffff;
   --text: #1b1f24;
   --muted: #5d6673;
   --line: #dde1e6;
-  --accent: #2f6fdf;
+  --accent: #1f8a7a;
   --accent-text: #ffffff;
   --danger: #c23b3b;
   --field: #ffffff;
@@ -17,19 +19,19 @@
     --bg: #0f1216;
     --panel: #171b21;
     --text: #e6e9ee;
-    --muted: #98a2b0;
+    --muted: #a9b2bf;
     --line: #2a3038;
-    --accent: #5b8ff0;
-    --accent-text: #0b0e12;
+    --accent: #3bb3a1;
+    --accent-text: #04201b;
     --danger: #ef6a6a;
-    --field: #0f1216;
+    --field: #12161b;
     --warn: #f0b45a;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1216; --panel: #171b21; --text: #e6e9ee; --muted: #98a2b0; --line: #2a3038;
-  --accent: #5b8ff0; --accent-text: #0b0e12; --danger: #ef6a6a; --field: #0f1216; --warn: #f0b45a; color-scheme: dark;
+  --bg: #0f1216; --panel: #171b21; --text: #e6e9ee; --muted: #a9b2bf; --line: #2a3038;
+  --accent: #3bb3a1; --accent-text: #04201b; --danger: #ef6a6a; --field: #12161b; --warn: #f0b45a; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -48,7 +50,8 @@ body {
 
 .brand { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 12px 0 10px; margin-bottom: -2px; border-bottom: 1px solid var(--line); }
 .brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.brand h1 { font-size: 16px; margin: 0; letter-spacing: -0.01em; white-space: nowrap; }
+.brand h1 { font-size: 16px; margin: 0; letter-spacing: -0.01em; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.brand h1 .logo { width: 20px; height: 20px; flex: none; color: var(--accent); }
 .tools { display: flex; gap: 6px; }
 /* Sky view settings: labels in one column, controls in the other. */
 .settings { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px 8px; align-items: center; }
@@ -62,7 +65,7 @@ body {
 .chip.on { background: color-mix(in srgb, var(--chip, var(--accent)) 22%, transparent); border-color: var(--chip, var(--accent)); color: var(--text); }
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0; }
 
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .card.folded { padding-block: 10px; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 26px; }
 /* Folding card heading: looks like the other headings, with a caret. */
@@ -112,7 +115,7 @@ button.fold .current:empty { display: none; }
 .warn { color: var(--warn); }
 input:disabled { opacity: 0.55; }
 .pair { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 8px; align-items: center; }
-input, select { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+input, select { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-width: 0; }
 textarea { width: 100%; margin-top: 6px; font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--text); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 6px; resize: vertical; white-space: pre; }
 input[type="range"] { padding: 0; accent-color: var(--accent); }
 input[type="color"] { padding: 2px; height: 32px; }
@@ -120,7 +123,7 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accen
 .search { display: flex; gap: 8px; }
 .search input { flex: 1; min-width: 0; }
 
-button, .button { font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; padding: 7px 12px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; }
+button, .button { font: inherit; font-weight: 600; cursor: pointer; border-radius: 8px; padding: 7px 12px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; }
 button.ghost, .button.ghost { background: transparent; color: var(--accent); }
 button.danger { border-color: var(--danger); color: var(--danger); }
 button.small, .button.small { padding: 4px 9px; font-size: 12px; }
