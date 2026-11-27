@@ -152,6 +152,19 @@ footer a { color: var(--text2); }
 .install.two { grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 820px) { .grid2, .install.two { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .window { width: 38%; } }
+
+/* closer look: click a picture to see it large */
+a.zoom { display: block; cursor: zoom-in; position: relative; }
+a.zoom::after { content: "⤢"; position: absolute; right: 10px; bottom: 10px; width: 30px; height: 30px; border-radius: 8px;
+  display: grid; place-items: center; font-size: 17px; color: var(--text); background: rgba(15,18,22,.75); border: 1px solid var(--line); opacity: .85; }
+a.zoom:hover img { filter: brightness(1.06); }
+dialog#zoom { width: min(96vw, 1800px); max-height: 94vh; padding: 0; border: 1px solid var(--line); border-radius: var(--r);
+  background: #0b0d10; color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.7); overflow: hidden; }
+dialog#zoom::backdrop { background: rgba(5,7,9,.82); backdrop-filter: blur(2px); }
+dialog#zoom img { display: block; width: 100%; height: auto; max-height: calc(94vh - 56px); object-fit: contain; cursor: zoom-out; background: #000; }
+dialog#zoom .zbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; font-size: 14.5px; color: var(--text2); }
+dialog#zoom .zbar button { background: none; border: 1px solid var(--line); color: var(--text2); border-radius: 8px; width: 34px; height: 34px; font-size: 22px; line-height: 1; cursor: pointer; flex: none; }
+dialog#zoom .zbar button:hover { color: var(--text); }
 </style>
 </head>
 <body>
@@ -197,8 +210,8 @@ footer a { color: var(--text2); }
   <div class="wrap">
     <h2>A closer look</h2>
     <div class="grid2">
-      <div><div class="shot"><img src="img/another-rig.jpg" width="1600" height="964" alt="A 3×2 mosaic of the Soul Nebula for a second rig" loading="lazy"></div><p class="cap">A second rig in its own colour: a 1370 mm RC needs six panels for the Soul Nebula.</p></div>
-      <div><div class="shot"><img src="img/target-settings.jpg" width="1600" height="964" alt="The target card: position, camera angle, mosaic and exposures" loading="lazy"></div><p class="cap">The target card: position, camera angle (as the ASIAIR shows it after a plate solve), mosaic and exposures.</p></div>
+      <div><a class="shot zoom" href="img/large/another-rig.jpg" aria-label="Show larger: A 3×2 mosaic of the Soul Nebula for a second rig"><img src="img/another-rig.jpg" width="1600" height="964" alt="A 3×2 mosaic of the Soul Nebula for a second rig" loading="lazy"></a><p class="cap">A second rig in its own colour: a 1370 mm RC needs six panels for the Soul Nebula.</p></div>
+      <div><a class="shot zoom" href="img/large/target-settings.jpg" aria-label="Show larger: The target card: position, camera angle, mosaic and exposures"><img src="img/target-settings.jpg" width="1600" height="964" alt="The target card: position, camera angle, mosaic and exposures" loading="lazy"></a><p class="cap">The target card: position, camera angle (as the ASIAIR shows it after a plate solve), mosaic and exposures.</p></div>
     </div>
   </div>
 </section>
@@ -246,6 +259,8 @@ footer a { color: var(--text2); }
 </section>
 </main>
 
+<dialog id="zoom" aria-label="Larger picture"><img alt=""><div class="zbar"><span id="zoomCap"></span><button type="button" id="zoomClose" aria-label="Close">×</button></div></dialog>
+
 <footer>
   <div class="wrap">
     <p>ASIAIR Mosaic Planner is free, with its source on GitHub. It isn't made by or connected with ZWO. Sky images come from the CDS (Strasbourg) through Aladin Lite.</p>
@@ -267,6 +282,26 @@ footer a { color: var(--text2); }
     if (url) document.querySelectorAll('[data-asset="mac"]').forEach(a => a.href = url);
     if (app) document.getElementById("ver").textContent = "Newest Mac app: " + app.tag_name.slice(5) + ".";
   } catch (e) { /* keep the link in the page */ }
+})();
+
+// Closer look: open the picture large in a pop-up (without JavaScript the link opens the picture).
+(() => {
+  const d = document.getElementById("zoom");
+  if (!d || typeof d.showModal !== "function") return;
+  const img = d.querySelector("img"), cap = document.getElementById("zoomCap");
+  document.querySelectorAll("a.zoom").forEach(a => a.addEventListener("click", e => {
+    e.preventDefault();
+    const small = a.querySelector("img");
+    img.src = small.currentSrc || small.src;          // show the page's copy at once…
+    const big = new Image(); big.onload = () => { if (d.open) img.src = big.src; }; big.src = a.href;   // …then the sharper one
+    img.alt = small.alt;
+    cap.textContent = (a.parentElement.querySelector(".cap") || {}).textContent || "";
+    d.showModal();
+  }));
+  const close = () => d.close();
+  document.getElementById("zoomClose").addEventListener("click", close);
+  img.addEventListener("click", close);
+  d.addEventListener("click", e => { if (e.target === d) close(); });
 })();
 </script>
 </body>
