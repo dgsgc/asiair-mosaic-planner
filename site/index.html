@@ -8,7 +8,7 @@
 <meta property="og:title" content="ASIAIR Mosaic Planner">
 <meta property="og:description" content="Plan ASIAIR mosaics on real sky images, every rig side by side, and send them to the ASIAIR app with exposures.">
 <meta property="og:image" content="https://dgsgc.github.io/asiair-mosaic-planner/img/plan-a-mosaic.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='6' width='14' height='11' rx='1.5' fill='none' stroke='%235b9cf5' stroke-width='2.6'/%3E%3Crect x='14' y='15' width='14' height='11' rx='1.5' fill='none' stroke='%235b9cf5' stroke-width='2.6'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='6' width='14' height='11' rx='1.5' fill='none' stroke='%233bb3a1' stroke-width='2.6'/%3E%3Crect x='14' y='15' width='14' height='11' rx='1.5' fill='none' stroke='%233bb3a1' stroke-width='2.6'/%3E%3C/svg%3E">
 <script>
 // The planner itself used to live at this address. Someone who has used it before (their rigs are
 // saved in this browser) and arrives from a bookmark or another site goes straight to it. Coming
@@ -21,12 +21,12 @@ try {
 <style>
 :root { color-scheme: dark;
   --bg: #0e1013; --panel: #171a1f; --line: #262a31; --text: #e8eaed; --text2: #a3a9b3;
-  --ok: #4fb06d; --accent: #5b9cf5; --warn: #e0a43a; --alert: #e25b4b; --link: #7cb8ff;
+  --ok: #4fb06d; --accent: #3bb3a1; --warn: #e0a43a; --alert: #e25b4b; --link: #7cb8ff;
   --r: 12px; --max: 1080px;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg) radial-gradient(1100px 520px at 70% -120px, rgba(91,156,245,.10), transparent 70%) no-repeat; color: var(--text); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0; background: var(--bg) radial-gradient(1100px 520px at 70% -120px, rgba(59,179,161,.10), transparent 70%) no-repeat; color: var(--text); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 a { color: var(--link); }
 img { max-width: 100%; height: auto; display: block; }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
@@ -67,7 +67,7 @@ header nav a:hover { color: var(--text); }
 .dl { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 8px; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 16px;
        text-decoration: none; border: 1px solid #3c434e; color: var(--text); background: #20252c; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #06101f; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #04201b; }
 .btn:hover { filter: brightness(1.1); }
 .btn .sub { font-weight: 400; font-size: 13px; opacity: .8; }
 
@@ -96,7 +96,7 @@ header nav a:hover { color: var(--text); }
 .steps { list-style: none; counter-reset: st; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 34px; }
 .steps li { counter-increment: st; position: relative; padding-left: 46px; }
 .steps li::before { content: counter(st); position: absolute; left: 0; top: -2px; width: 32px; height: 32px; border-radius: 50%;
-  display: grid; place-items: center; font-weight: 700; font-size: 15px; color: var(--accent); background: rgba(91,156,245,.14); border: 1px solid rgba(91,156,245,.35); }
+  display: grid; place-items: center; font-weight: 700; font-size: 15px; color: var(--accent); background: rgba(59,179,161,.14); border: 1px solid rgba(59,179,161,.35); }
 .steps p { color: var(--text2); margin: 0; }
 
 /* settings pop-up */
@@ -158,7 +158,7 @@ footer a { color: var(--text2); }
 
 <header>
   <div class="wrap">
-    <a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="14" height="11" rx="1.5" fill="none" stroke="#5b9cf5" stroke-width="2.6"/><rect x="14" y="15" width="14" height="11" rx="1.5" fill="none" stroke="#5b9cf5" stroke-width="2.6"/></svg>ASIAIR Mosaic Planner</a>
+    <a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="14" height="11" rx="1.5" fill="none" stroke="#3bb3a1" stroke-width="2.6"/><rect x="14" y="15" width="14" height="11" rx="1.5" fill="none" stroke="#3bb3a1" stroke-width="2.6"/></svg>ASIAIR Mosaic Planner</a>
     <nav><a href="#why">Why</a><a href="#get">Get it</a><a href="#start">Getting started</a><a href="https://dgsgc.github.io/">More tools</a><a href="https://github.com/dgsgc/asiair-mosaic-planner">GitHub</a></nav>
   </div>
 </header>
